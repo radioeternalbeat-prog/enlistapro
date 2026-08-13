@@ -1,0 +1,19 @@
+{
+  "name": "en-lista",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^7.3.1"
+  },
+  "dependencies": {
+    "firebase": "^12.10.0",
+    "html5-qrcode": "^2.3.8",
+    "qrcode": "^1.5.4"
+  }
+}

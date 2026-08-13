@@ -1,0 +1,19 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Reglas para Licencias Comerciales
+    // Permite lectura para validacion y actualizacion para registrar nuevos dispositivos
+    match /licenses/{licenseKey} {
+      allow read: if true;
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['devices', 'lastUsedAt']);
+      allow create: if true; 
+    }
+
+    // Reglas para el Estado Global de EN LISTA!
+    match /enlista/global_state {
+      allow read, write: if true;
+    }
+  }
+}
