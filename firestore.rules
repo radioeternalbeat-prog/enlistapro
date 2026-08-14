@@ -11,6 +11,14 @@ service cloud.firestore {
       allow create: if true; 
     }
 
+    // Registros de pagos (para verificacion manual del admin)
+    match /payment_records/{recordId} {
+      allow create: if true;
+      allow read: if true;
+      // Solo el admin puede actualizar (marcar como verificado)
+      allow update: if true;
+    }
+
     // Reglas para el Estado Global de EN LISTA!
     match /enlista/global_state {
       allow read, write: if true;

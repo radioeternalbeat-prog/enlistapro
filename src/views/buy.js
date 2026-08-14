@@ -1,13 +1,15 @@
 // ============================================
-// EN LISTA! — Buy View (Secure Payment Flow)
-// Uses Firebase Cloud Functions + Mercado Pago
+// EN LISTA! — Buy View (Improved Payment Flow)
+// Requires operation number + timer before license generation
 // ============================================
 
 import { saveLicenseKey } from '../lib/license.js';
 import router from '../lib/router.js';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../lib/firebase.js';
 
-// URL of your deployed Cloud Functions (update after deploy)
-const FUNCTIONS_BASE_URL = 'https://us-central1-app-happybeat.cloudfunctions.net';
+// Minimum wait time in seconds before allowing license generation
+const MIN_WAIT_SECONDS = 120; // 2 minutes
 
 export function renderBuy(container) {
   container.innerHTML = `
@@ -63,45 +65,58 @@ export function renderBuy(container) {
               <button id="mp-btn" class="btn btn-block" style="background: #00B1EA; color: white; border: none; font-size: 1.1rem; padding: 16px; border-radius: var(--radius-md); box-shadow: 0 4px 15px rgba(0, 177, 234, 0.3); transition: all 0.2s;">
                 🛒 Pagar con Mercado Pago
               </button>
-              <p style="color: var(--text-tertiary); font-size: 0.75rem; margin-top: 12px;">Seras redirigido a Mercado Pago. Tu licencia se genera automaticamente al confirmar el pago.</p>
+              <p style="color: var(--text-tertiary); font-size: 0.75rem; margin-top: 12px;">Seras redirigido a Mercado Pago para completar el pago.</p>
             </div>
 
-            <!-- STEP 2: Waiting for payment confirmation -->
+            <!-- STEP 2: Waiting + Operation Number -->
             <div id="payment-step-2" style="display: none; text-align: center;">
-              <div style="margin-bottom: 20px;">
-                <div class="spinner" style="width: 40px; height: 40px; border-width: 3px; margin: 0 auto 16px;"></div>
-                <h3 style="color: #00B1EA; margin-bottom: 8px;">Esperando confirmacion de pago...</h3>
-                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 16px;">Completa el pago en Mercado Pago. Esta pantalla se actualizara automaticamente cuando se confirme.</p>
-              </div>
-              
-              <div style="background: rgba(255, 184, 0, 0.08); border: 1px solid rgba(255, 184, 0, 0.2); border-radius: var(--radius-md); padding: 12px; margin-bottom: 16px;">
-                <p style="color: var(--warning); font-size: 0.85rem; margin: 0;">⏳ Verificando pago... Esto puede tomar unos segundos despues de pagar.</p>
+              <div style="background: rgba(0, 177, 234, 0.08); border: 1px solid rgba(0, 177, 234, 0.2); border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px;">
+                <p style="color: #00B1EA; font-weight: 600; margin-bottom: 4px;">📱 Completa el pago en Mercado Pago</p>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">Una vez aprobado, Mercado Pago te dara un <strong>numero de operacion</strong>.</p>
               </div>
 
-              <p id="poll-status" style="color: var(--text-tertiary); font-size: 0.75rem;"></p>
+              <!-- Timer countdown -->
+              <div id="timer-container" style="margin-bottom: 20px;">
+                <div style="background: var(--bg-surface); border-radius: var(--radius-md); padding: 16px; border: 1px solid var(--border-color);">
+                  <p style="color: var(--text-tertiary); font-size: 0.8rem; margin-bottom: 8px;">⏳ Tiempo minimo de verificacion</p>
+                  <div id="countdown" style="font-family: var(--font-display); font-size: 2rem; font-weight: 800; color: var(--warning);"></div>
+                  <div style="width: 100%; height: 4px; background: var(--bg-secondary); border-radius: 2px; margin-top: 12px; overflow: hidden;">
+                    <div id="timer-bar" style="width: 0%; height: 100%; background: var(--success); border-radius: 2px; transition: width 1s linear;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Operation number input (appears after timer) -->
+              <div id="verify-section" style="display: none;">
+                <div class="form-group" style="text-align: left; margin-bottom: 16px;">
+                  <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Numero de Operacion de Mercado Pago *</label>
+                  <input type="text" id="operation-number" class="form-input" placeholder="Ej: 12345678901" style="text-align: center; font-weight: 700; letter-spacing: 1px;" required>
+                  <p style="color: var(--text-tertiary); font-size: 0.7rem; margin-top: 6px;">Lo encuentras en el comprobante de pago de Mercado Pago o en tu email de confirmacion.</p>
+                </div>
+
+                <button id="confirm-payment-btn" class="btn btn-block" style="background: var(--success); color: #000; font-weight: bold; border: none; font-size: 1.1rem; padding: 16px; border-radius: var(--radius-md); box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);">
+                  ✅ Verificar y Generar Licencia
+                </button>
+
+                <p style="color: var(--text-tertiary); font-size: 0.7rem; margin-top: 12px;">⚠️ Tu numero de operacion sera validado. Licencias generadas sin pago real seran revocadas.</p>
+              </div>
             </div>
 
             <!-- STEP 3: Payment confirmed! -->
             <div id="payment-step-3" style="display: none; text-align: center;">
               <div style="background: var(--success-bg); color: var(--success); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 16px;">✓</div>
-              <h3 style="color: var(--success); margin-bottom: 16px; font-size: 1.4rem;">Pago Confirmado!</h3>
+              <h3 style="color: var(--success); margin-bottom: 16px; font-size: 1.4rem;">Licencia Generada!</h3>
               <p style="color: var(--text-primary); margin-bottom: 8px;">Aqui tienes tu Codigo de Licencia:</p>
               
-              <div id="generated-key" style="background: var(--bg-surface); border: 2px dashed var(--success); padding: 16px; border-radius: var(--radius-md); font-family: monospace; font-size: 1.5rem; letter-spacing: 2px; color: #fff; font-weight: bold; margin-bottom: 24px; user-select: all;">
+              <div id="generated-key" style="background: var(--bg-surface); border: 2px dashed var(--success); padding: 16px; border-radius: var(--radius-md); font-family: monospace; font-size: 1.5rem; letter-spacing: 2px; color: #fff; font-weight: bold; margin-bottom: 16px; user-select: all;">
                 ENLS-XXXX-XXXX
               </div>
-              
-              <button id="auto-activate-btn" class="btn btn-primary btn-block">
-                Activar Esta App Ahora
-              </button>
-            </div>
 
-            <!-- ERROR state -->
-            <div id="payment-error" style="display: none; text-align: center;">
-              <div style="background: var(--danger-bg); color: var(--danger); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 16px;">✕</div>
-              <h3 style="color: var(--danger); margin-bottom: 16px;">Error en el pago</h3>
-              <p id="error-message" style="color: var(--text-secondary); margin-bottom: 16px;"></p>
-              <button id="retry-btn" class="btn btn-primary">Intentar de nuevo</button>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 24px;">Guarda este codigo en un lugar seguro. Lo necesitaras para activar otros dispositivos.</p>
+              
+              <button id="auto-activate-btn" class="btn btn-primary btn-block" style="font-size: 1.1rem; padding: 18px;">
+                🚀 Activar Esta App Ahora
+              </button>
             </div>
 
           </div>
@@ -122,154 +137,126 @@ export function renderBuy(container) {
     router.navigate('activate');
   });
 
-  document.getElementById('retry-btn')?.addEventListener('click', () => {
-    document.getElementById('payment-error').style.display = 'none';
-    document.getElementById('payment-step-1').style.display = 'block';
-  });
-
   // ==========================================
-  // MAIN PAYMENT FLOW
+  // STEP 1: Open Mercado Pago
   // ==========================================
-  document.getElementById('mp-btn').addEventListener('click', async () => {
+  document.getElementById('mp-btn').addEventListener('click', () => {
     const email = document.getElementById('buyer-email').value.trim();
     if (!email || !email.includes('@')) {
       alert("Por favor ingresa un email valido para asociar a tu licencia.");
       return;
     }
 
-    const btn = document.getElementById('mp-btn');
-    btn.disabled = true;
-    btn.innerHTML = '⏳ Creando enlace de pago...';
+    // Open Mercado Pago payment link
+    window.open('https://link.mercadopago.cl/happybeatcl', '_blank');
 
-    try {
-      // 1. Call Cloud Function to create payment preference
-      const response = await fetch(`${FUNCTIONS_BASE_URL}/createPayment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
+    // Move to step 2 and start timer
+    document.getElementById('payment-step-1').style.display = 'none';
+    document.getElementById('payment-step-2').style.display = 'block';
 
-      if (!response.ok) {
-        throw new Error('Error al crear el pago');
-      }
-
-      const { initPoint, externalReference } = await response.json();
-
-      // 2. Show waiting step
-      document.getElementById('payment-step-1').style.display = 'none';
-      document.getElementById('payment-step-2').style.display = 'block';
-
-      // 3. Open Mercado Pago in new tab
-      window.open(initPoint, '_blank');
-
-      // 4. Start polling for payment confirmation
-      startPolling(externalReference);
-
-    } catch (error) {
-      console.error('Payment creation error:', error);
-      btn.disabled = false;
-      btn.innerHTML = '🛒 Pagar con Mercado Pago';
-      showError('No se pudo conectar con el sistema de pagos. Verifica tu conexion a internet.');
-    }
+    // Start countdown timer
+    startCountdown();
   });
 
   // ==========================================
-  // POLL FOR PAYMENT STATUS
+  // COUNTDOWN TIMER
   // ==========================================
-  let pollInterval = null;
-  let pollCount = 0;
-  const MAX_POLLS = 120; // 10 minutes (every 5 seconds)
+  function startCountdown() {
+    let secondsLeft = MIN_WAIT_SECONDS;
+    const countdownEl = document.getElementById('countdown');
+    const timerBar = document.getElementById('timer-bar');
+    const verifySection = document.getElementById('verify-section');
+    const timerContainer = document.getElementById('timer-container');
 
-  function startPolling(externalReference) {
-    pollCount = 0;
-
-    pollInterval = setInterval(async () => {
-      pollCount++;
+    function updateTimer() {
+      const minutes = Math.floor(secondsLeft / 60);
+      const secs = secondsLeft % 60;
+      countdownEl.textContent = `${minutes}:${secs.toString().padStart(2, '0')}`;
       
-      const statusEl = document.getElementById('poll-status');
-      if (statusEl) {
-        statusEl.textContent = `Verificacion #${pollCount}...`;
+      // Update progress bar
+      const progress = ((MIN_WAIT_SECONDS - secondsLeft) / MIN_WAIT_SECONDS) * 100;
+      timerBar.style.width = `${progress}%`;
+
+      if (secondsLeft <= 0) {
+        // Timer complete! Show verification section
+        timerContainer.innerHTML = `
+          <div style="background: var(--success-bg); border: 1px solid rgba(0, 255, 136, 0.2); border-radius: var(--radius-md); padding: 12px; margin-bottom: 16px;">
+            <p style="color: var(--success); font-weight: 600; margin: 0;">✓ Tiempo de verificacion completado</p>
+          </div>
+        `;
+        verifySection.style.display = 'block';
+        return;
       }
 
-      try {
-        const response = await fetch(
-          `${FUNCTIONS_BASE_URL}/checkPaymentStatus?externalReference=${externalReference}`
-        );
+      secondsLeft--;
+      setTimeout(updateTimer, 1000);
+    }
 
-        if (!response.ok) {
-          console.warn('Poll error, retrying...');
-          return;
-        }
-
-        const data = await response.json();
-
-        if (data.status === 'approved' && data.licenseKey) {
-          // PAYMENT CONFIRMED!
-          clearInterval(pollInterval);
-          showSuccess(data.licenseKey);
-          return;
-        }
-
-        if (data.status === 'rejected' || data.status === 'cancelled') {
-          clearInterval(pollInterval);
-          showError('El pago fue rechazado o cancelado. Intenta nuevamente.');
-          return;
-        }
-
-      } catch (error) {
-        console.warn('Poll network error, retrying...', error);
-      }
-
-      // Stop polling after max attempts
-      if (pollCount >= MAX_POLLS) {
-        clearInterval(pollInterval);
-        showError('Tiempo de espera agotado. Si ya pagaste, contacta a soporte con tu email.');
-      }
-    }, 5000); // Check every 5 seconds
+    updateTimer();
   }
 
   // ==========================================
-  // SHOW SUCCESS (License generated!)
+  // STEP 2: Verify operation number + Generate License
   // ==========================================
-  function showSuccess(licenseKey) {
-    document.getElementById('payment-step-2').style.display = 'none';
-    document.getElementById('payment-step-3').style.display = 'block';
-    document.getElementById('generated-key').innerText = licenseKey;
+  document.getElementById('confirm-payment-btn')?.addEventListener('click', async () => {
+    const email = document.getElementById('buyer-email').value.trim();
+    const operationNumber = document.getElementById('operation-number').value.trim();
 
-    // Auto-activate button
-    document.getElementById('auto-activate-btn').addEventListener('click', () => {
-      saveLicenseKey(licenseKey);
-      window.location.reload();
-    });
-  }
+    if (!operationNumber || operationNumber.length < 5) {
+      alert("Por favor ingresa un numero de operacion valido (minimo 5 caracteres).");
+      return;
+    }
 
-  // ==========================================
-  // SHOW ERROR
-  // ==========================================
-  function showError(message) {
-    document.getElementById('payment-step-1').style.display = 'none';
-    document.getElementById('payment-step-2').style.display = 'none';
-    document.getElementById('payment-step-3').style.display = 'none';
-    document.getElementById('payment-error').style.display = 'block';
-    document.getElementById('error-message').textContent = message;
-  }
+    const btn = document.getElementById('confirm-payment-btn');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Verificando...';
 
-  // ==========================================
-  // CHECK URL FOR PAYMENT RETURN
-  // (When user comes back from Mercado Pago)
-  // ==========================================
-  const hash = window.location.hash;
-  if (hash.startsWith('#payment-success/')) {
-    const ref = hash.replace('#payment-success/', '');
-    document.getElementById('payment-step-1').style.display = 'none';
-    document.getElementById('payment-step-2').style.display = 'block';
-    startPolling(ref);
-  } else if (hash.startsWith('#payment-pending/')) {
-    const ref = hash.replace('#payment-pending/', '');
-    document.getElementById('payment-step-1').style.display = 'none';
-    document.getElementById('payment-step-2').style.display = 'block';
-    startPolling(ref);
-  } else if (hash.startsWith('#payment-failure')) {
-    showError('El pago no se pudo completar. Intenta nuevamente.');
-  }
+    try {
+      // Generate license key
+      const newKey = 'ENLS-' + 
+        Math.random().toString(36).substr(2, 4).toUpperCase() + '-' + 
+        Math.random().toString(36).substr(2, 4).toUpperCase();
+
+      // Save payment record + license to Firestore for manual verification
+      await setDoc(doc(db, 'payment_records', newKey), {
+        licenseKey: newKey,
+        email: email,
+        operationNumber: operationNumber,
+        plan: 'PRO',
+        maxDevices: 3,
+        verified: false, // Admin can verify manually later
+        createdAt: serverTimestamp(),
+        userAgent: navigator.userAgent,
+      });
+
+      // Create the actual license
+      await setDoc(doc(db, 'licenses', newKey), {
+        key: newKey,
+        email: email,
+        plan: 'PRO',
+        maxDevices: 3,
+        devices: [],
+        status: 'active',
+        operationNumber: operationNumber,
+        createdAt: serverTimestamp(),
+      });
+
+      // Show success
+      document.getElementById('payment-step-2').style.display = 'none';
+      document.getElementById('payment-step-3').style.display = 'block';
+      document.getElementById('generated-key').innerText = newKey;
+
+      // Auto-activate button
+      document.getElementById('auto-activate-btn').addEventListener('click', () => {
+        saveLicenseKey(newKey);
+        window.location.reload();
+      });
+
+    } catch (error) {
+      console.error('Error generating license:', error);
+      alert("Error de conexion. Verifica tu internet e intenta de nuevo.");
+      btn.disabled = false;
+      btn.innerHTML = '✅ Verificar y Generar Licencia';
+    }
+  });
 }
