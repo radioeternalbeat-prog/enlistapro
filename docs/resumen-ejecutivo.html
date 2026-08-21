@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EN LISTA! — Resumen Ejecutivo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&display=swap');
+
+  :root {
+    --purple: #7B2FFF;
+    --purple-dark: #5A1FCC;
+    --green: #00C46A;
+    --cyan: #00B1EA;
+    --dark: #0A0A0F;
+    --surface: #14141F;
+    --text: #1A1A2E;
+    --text-soft: #555;
+    --border: #E5E5EF;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    line-height: 1.6;
+    background: #F4F4F8;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto 20px;
+    background: white;
+    padding: 0;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  h1, h2, h3, h4 { font-family: 'Space Grotesk', sans-serif; }
+
+  /* ===== COVER ===== */
+  .cover {
+    background: linear-gradient(160deg, #0A0A0F 0%, #1A1333 55%, #2A1A5E 100%);
+    color: white;
+    padding: 60px 50px;
+    min-height: 297mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -120px; right: -120px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(123,47,255,0.4), transparent 70%);
+    border-radius: 50%;
+  }
+  .cover::after {
+    content: '';
+    position: absolute;
+    bottom: -150px; left: -100px;
+    width: 380px; height: 380px;
+    background: radial-gradient(circle, rgba(0,177,234,0.25), transparent 70%);
+    border-radius: 50%;
+  }
+  .cover-top { position: relative; z-index: 2; }
+  .logo-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--purple);
+    background: rgba(123,47,255,0.15);
+    border: 1px solid rgba(123,47,255,0.3);
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-weight: 600;
+    margin-bottom: 40px;
+  }
+  .cover h1 {
+    font-size: 5rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -2px;
+    margin-bottom: 16px;
+  }
+  .cover h1 span { color: var(--purple); }
+  .cover .tagline {
+    font-size: 1.5rem;
+    color: #C5C5E0;
+    font-weight: 300;
+    max-width: 500px;
+  }
+  .cover-mid { position: relative; z-index: 2; }
+  .cover-highlights {
+    display: flex;
+    gap: 16px;
+    margin-top: 40px;
+  }
+  .cover-hl {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 20px;
+    flex: 1;
+  }
+  .cover-hl .num {
+    font-family: 'Space Grotesk';
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--green);
+  }
+  .cover-hl .lbl {
+    font-size: 0.8rem;
+    color: #A0A0C0;
+    margin-top: 4px;
+  }
+  .cover-bottom {
+    position: relative;
+    z-index: 2;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    font-size: 0.85rem;
+    color: #8B8BA3;
+  }
+  .cover-bottom strong { color: white; display: block; font-size: 1rem; }
+
+  /* ===== CONTENT PAGES ===== */
+  .content { padding: 50px 50px 60px; }
+
+  .section-tag {
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--purple);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .content h2 {
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+  }
+  .content h2 .bar {
+    display: block;
+    width: 50px; height: 4px;
+    background: linear-gradient(90deg, var(--purple), var(--cyan));
+    border-radius: 2px;
+    margin-top: 12px;
+    margin-bottom: 28px;
+  }
+  .content p.lead {
+    font-size: 1.05rem;
+    color: var(--text-soft);
+    margin-bottom: 28px;
+  }
+
+  .prob-sol {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+  .ps-card {
+    border-radius: 14px;
+    padding: 24px;
+  }
+  .ps-card.problem { background: #FFF3F5; border: 1px solid #FFD5DE; }
+  .ps-card.solution { background: #EFFBF4; border: 1px solid #C5F0D8; }
+  .ps-card h4 {
+    font-size: 1rem;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ps-card.problem h4 { color: #D6336C; }
+  .ps-card.solution h4 { color: #0A9B54; }
+  .ps-card ul { list-style: none; }
+  .ps-card li {
+    font-size: 0.9rem;
+    color: var(--text-soft);
+    padding: 6px 0 6px 22px;
+    position: relative;
+  }
+  .ps-card.problem li::before { content: '✕'; position: absolute; left: 0; color: #D6336C; font-weight: bold; }
+  .ps-card.solution li::before { content: '✓'; position: absolute; left: 0; color: #0A9B54; font-weight: bold; }
+
+  /* Feature grid */
+  .feat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .feat {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    background: #FBFBFE;
+  }
+  .feat .ico {
+    font-size: 1.6rem;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .feat h4 {
+    font-size: 1.05rem;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .feat p {
+    font-size: 0.85rem;
+    color: var(--text-soft);
+  }
+
+  /* Roles table */
+  .roles { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+  .role {
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+    padding: 20px;
+    border-radius: 14px;
+    background: #FBFBFE;
+    border: 1px solid var(--border);
+  }
+  .role .role-ico {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--purple), #A855F7);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+  .role h4 { font-size: 1.05rem; margin-bottom: 4px; }
+  .role p { font-size: 0.88rem; color: var(--text-soft); }
+
+  /* Tech stack pills */
+  .pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+  .pill {
+    background: #F0EDFF;
+    color: var(--purple-dark);
+    border: 1px solid #DAD0FF;
+    padding: 8px 16px;
+    border-radius: 100px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  /* Advantages numbered */
+  .adv { display: flex; flex-direction: column; gap: 16px; }
+  .adv-item { display: flex; gap: 18px; align-items: flex-start; }
+  .adv-num {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--purple), var(--cyan));
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Grotesk'; font-weight: 800;
+    flex-shrink: 0;
+  }
+  .adv-item h4 { font-size: 1.05rem; margin-bottom: 2px; }
+  .adv-item p { font-size: 0.9rem; color: var(--text-soft); }
+
+  /* Monetization / value box */
+  .value-box {
+    background: linear-gradient(135deg, #0A0A0F, #1A1333);
+    color: white;
+    border-radius: 18px;
+    padding: 34px;
+    margin: 26px 0;
+  }
+  .value-box h3 { font-size: 1.3rem; margin-bottom: 16px; }
+  .value-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+  .value-cell .v { font-family: 'Space Grotesk'; font-size: 1.8rem; font-weight: 800; color: var(--green); }
+  .value-cell .l { font-size: 0.8rem; color: #A0A0C0; margin-top: 4px; }
+
+  .callout {
+    background: #F0EDFF;
+    border-left: 4px solid var(--purple);
+    border-radius: 8px;
+    padding: 18px 22px;
+    font-size: 0.92rem;
+    color: var(--text);
+    margin: 24px 0;
+  }
+
+  /* Footer */
+  .pg-footer {
+    position: absolute;
+    bottom: 22px; left: 50px; right: 50px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: #AAA;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+  .pg-footer strong { color: var(--purple); }
+
+  /* CTA final */
+  .cta-page {
+    background: linear-gradient(160deg, #0A0A0F 0%, #1A1333 100%);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 297mm;
+    padding: 60px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-page::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(123,47,255,0.3), transparent 70%);
+    border-radius: 50%;
+  }
+  .cta-page > * { position: relative; z-index: 2; }
+  .cta-page h2 { font-size: 2.6rem; font-weight: 800; margin-bottom: 16px; letter-spacing: -1px; }
+  .cta-page p { font-size: 1.15rem; color: #C5C5E0; max-width: 480px; margin-bottom: 32px; }
+  .cta-contact {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 16px;
+    padding: 28px 40px;
+  }
+  .cta-contact .row { font-size: 1rem; margin: 6px 0; color: #E0E0F0; }
+  .cta-contact .row strong { color: var(--purple); }
+
+  @media print {
+    body { background: white; }
+    .page { margin: 0; box-shadow: none; page-break-after: always; width: 100%; min-height: 100vh; }
+    @page { size: A4; margin: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== PAGE 1 — COVER ===================== -->
+<div class="page cover">
+  <div class="cover-top">
+    <span class="logo-badge">Resumen Ejecutivo · Confidencial</span>
+    <h1>EN LISTA<span>!</span></h1>
+    <p class="tagline">Plataforma de gestion de listas de invitados y control de acceso para la industria de la vida nocturna.</p>
+  </div>
+
+  <div class="cover-mid">
+    <div class="cover-highlights">
+      <div class="cover-hl"><div class="num">3</div><div class="lbl">Roles operativos integrados</div></div>
+      <div class="cover-hl"><div class="num">QR</div><div class="lbl">Check-in en tiempo real</div></div>
+      <div class="cover-hl"><div class="num">PWA</div><div class="lbl">Instalable, funciona offline</div></div>
+    </div>
+  </div>
+
+  <div class="cover-bottom">
+    <div>
+      <strong>EN LISTA! PRO</strong>
+      Control de acceso inteligente para clubs y eventos
+    </div>
+    <div>enlistapro.web.app</div>
+  </div>
+</div>
+
+<!-- ===================== PAGE 2 — OVERVIEW / PROBLEM ===================== -->
+<div class="page">
+  <div class="content">
+    <div class="section-tag">Vision General</div>
+    <h2>Que es EN LISTA!<span class="bar"></span></h2>
+    <p class="lead">EN LISTA! es una aplicacion web progresiva (PWA) que digitaliza y profesionaliza el proceso completo de gestion de invitados y control de aforo en discotecas, pubs y eventos nocturnos. Reemplaza las listas de papel, los grupos de WhatsApp desordenados y las planillas manuales por una plataforma unica, en tiempo real y accesible desde cualquier celular.</p>
+
+    <div class="section-tag">El Problema del Mercado</div>
+    <h2>Un sector que opera con herramientas obsoletas<span class="bar"></span></h2>
+
+    <div class="prob-sol">
+      <div class="ps-card problem">
+        <h4>⚠️ Situacion actual del rubro</h4>
+        <ul>
+          <li>Listas en papel o Excel que se pierden o duplican</li>
+          <li>Sin control real de aforo (riesgo legal y de seguridad)</li>
+          <li>Imposible medir el rendimiento de cada promotor (RRPP)</li>
+          <li>Filas lentas en la puerta y mala experiencia del cliente</li>
+          <li>Cero trazabilidad de datos de asistentes</li>
+          <li>Fraude en accesos y entradas duplicadas</li>
+        </ul>
+      </div>
+      <div class="ps-card solution">
+        <h4>✓ Lo que resuelve EN LISTA!</h4>
+        <ul>
+          <li>Lista digital unica sincronizada en tiempo real</li>
+          <li>Contador de aforo en vivo con alertas de capacidad</li>
+          <li>Metricas de conversion por promotor automaticas</li>
+          <li>Check-in por QR en segundos, sin filas</li>
+          <li>Base de datos de clientes reutilizable</li>
+          <li>QR personal e intransferible por invitado</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Propuesta de valor:</strong> Convertir la operacion de puerta de un club — historicamente caotica e informal — en un sistema medible, seguro y escalable, con la simplicidad de una app que cualquier miembro del staff puede usar sin capacitacion.
+    </div>
+  </div>
+  <div class="pg-footer"><span><strong>EN LISTA!</strong> — Resumen Ejecutivo</span><span>Pagina 02</span></div>
+</div>
+
+<!-- ===================== PAGE 3 — FEATURES ===================== -->
+<div class="page">
+  <div class="content">
+    <div class="section-tag">Capacidades del Producto</div>
+    <h2>Funcionalidades principales<span class="bar"></span></h2>
+
+    <div class="feat-grid">
+      <div class="feat">
+        <span class="ico">📊</span>
+        <h4>Dashboard en tiempo real</h4>
+        <p>Aforo actual, invitados ingresados, pendientes y VIPs. Curva de llegada por horario y ocupacion en vivo.</p>
+      </div>
+      <div class="feat">
+        <span class="ico">📷</span>
+        <h4>Escaner QR de alta velocidad</h4>
+        <p>Check-in instantaneo con la camara del celular. Reconoce tambien QR de ticketeras externas.</p>
+      </div>
+      <div class="feat">
+        <span class="ico">🎤</span>
+        <h4>Gestion de promotores (RRPP)</h4>
+        <p>Cada promotor administra su propia lista, agrega invitados y genera links de auto-registro.</p>
+      </div>
+      <div class="feat">
+        <span class="ico">🔗</span>
+        <h4>Auto-registro de invitados</h4>
+        <p>Links compartibles por WhatsApp. El invitado se registra solo y recibe su QR descargable.</p>
+      </div>
+      <div class="feat">
+        <span class="ico">📋</span>
+        <h4>Reportes de cierre</h4>
+        <p>Metricas finales por evento: asistencia, no-shows y rendimiento por promotor exportable a PDF.</p>
+      </div>
+      <div class="feat">
+        <span class="ico">🌍</span>
+        <h4>Estadisticas globales</h4>
+        <p>Vista consolidada por dia, semana, mes y año. Base de datos historica de todos los asistentes.</p>
+      </div>
+      <div class="feat">
+        <span class="ico">📲</span>
+        <h4>PWA instalable</h4>
+        <p>Se instala como app nativa en iOS y Android. Funciona con conexion intermitente (modo offline).</p>
+      </div>
+      <div class="feat">
+        <span class="ico">🔐</span>
+        <h4>Sistema de licencias</h4>
+        <p>Activacion comercial por dispositivo con validacion en la nube y limite configurable de equipos.</p>
+      </div>
+    </div>
+  </div>
+  <div class="pg-footer"><span><strong>EN LISTA!</strong> — Resumen Ejecutivo</span><span>Pagina 03</span></div>
+</div>
+
+<!-- ===================== PAGE 4 — ROLES + TECH ===================== -->
+<div class="page">
+  <div class="content">
+    <div class="section-tag">Arquitectura Operativa</div>
+    <h2>Tres roles, una sola plataforma<span class="bar"></span></h2>
+    <p class="lead">Cada perfil accede unicamente a las herramientas que necesita, garantizando orden y seguridad operativa.</p>
+
+    <div class="roles">
+      <div class="role">
+        <div class="role-ico">👑</div>
+        <div>
+          <h4>Administrador</h4>
+          <p>Control total: crea y gestiona eventos, administra promotores, supervisa el aforo en tiempo real y genera reportes de cierre y estadisticas globales del negocio.</p>
+        </div>
+      </div>
+      <div class="role">
+        <div class="role-ico">🎤</div>
+        <div>
+          <h4>Promotor (RRPP)</h4>
+          <p>Gestiona sus propias listas de invitados, agrega personas manualmente o genera links de auto-registro para compartir. Su rendimiento se mide automaticamente.</p>
+        </div>
+      </div>
+      <div class="role">
+        <div class="role-ico">🚪</div>
+        <div>
+          <h4>Staff de Puerta</h4>
+          <p>Interfaz optimizada para ambientes de baja luz. Busqueda rapida y check-in por QR o por nombre, con contador de aforo siempre visible.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-tag" style="margin-top:32px;">Stack Tecnologico</div>
+    <h2>Construida sobre tecnologia moderna y escalable<span class="bar"></span></h2>
+    <p class="lead">Infraestructura serverless de Google (Firebase) que escala automaticamente sin costos fijos de servidores.</p>
+    <div class="pills">
+      <span class="pill">JavaScript (Vite)</span>
+      <span class="pill">Firebase Firestore</span>
+      <span class="pill">Firebase Hosting</span>
+      <span class="pill">Cloud Functions</span>
+      <span class="pill">PWA / Service Workers</span>
+      <span class="pill">Mercado Pago</span>
+      <span class="pill">HTML5 QR</span>
+    </div>
+
+    <div class="callout" style="margin-top:28px;">
+      <strong>Ventaja tecnica:</strong> Al ser serverless, la plataforma soporta desde 1 hasta miles de eventos simultaneos sin cambios de infraestructura, con sincronizacion en tiempo real entre todos los dispositivos conectados.
+    </div>
+  </div>
+  <div class="pg-footer"><span><strong>EN LISTA!</strong> — Resumen Ejecutivo</span><span>Pagina 04</span></div>
+</div>
+
+<!-- ===================== PAGE 5 — ADVANTAGES + BUSINESS ===================== -->
+<div class="page">
+  <div class="content">
+    <div class="section-tag">Por que EN LISTA!</div>
+    <h2>Ventajas competitivas<span class="bar"></span></h2>
+
+    <div class="adv">
+      <div class="adv-item">
+        <div class="adv-num">1</div>
+        <div><h4>Cero fricción de adopcion</h4><p>No requiere instalacion en tiendas de apps ni capacitacion. Se abre en el navegador y se instala con un toque.</p></div>
+      </div>
+      <div class="adv-item">
+        <div class="adv-num">2</div>
+        <div><h4>Datos como activo</h4><p>Cada evento alimenta una base de datos propia de clientes — un activo comercial reutilizable para marketing y fidelizacion.</p></div>
+      </div>
+      <div class="adv-item">
+        <div class="adv-num">3</div>
+        <div><h4>Modelo de ingresos recurrente</h4><p>Sistema de licencias comerciales ya integrado con pasarela de pago (Mercado Pago), listo para monetizar.</p></div>
+      </div>
+      <div class="adv-item">
+        <div class="adv-num">4</div>
+        <div><h4>Costos operativos minimos</h4><p>Infraestructura serverless con tier gratuito generoso. El costo escala solo con el uso real.</p></div>
+      </div>
+      <div class="adv-item">
+        <div class="adv-num">5</div>
+        <div><h4>Mercado amplio y desatendido</h4><p>Clubs, bares, productoras de eventos y discotecas — un sector masivo que aun opera de forma manual.</p></div>
+      </div>
+    </div>
+
+    <div class="value-box">
+      <h3>💼 Oportunidad de negocio</h3>
+      <div class="value-grid">
+        <div class="value-cell"><div class="v">$35</div><div class="l">Precio de licencia PRO (USD) — pago unico configurable</div></div>
+        <div class="value-cell"><div class="v">3</div><div class="l">Dispositivos por licencia (ampliable segun plan)</div></div>
+        <div class="value-cell"><div class="v">100%</div><div class="l">Automatizado: venta, activacion y validacion</div></div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Listo para escalar:</strong> El producto es un MVP funcional y desplegado en produccion. La estructura permite evolucionar a modelo SaaS por suscripcion, planes multi-venue, o white-label para cadenas de locales.
+    </div>
+  </div>
+  <div class="pg-footer"><span><strong>EN LISTA!</strong> — Resumen Ejecutivo</span><span>Pagina 05</span></div>
+</div>
+
+<!-- ===================== PAGE 6 — CTA ===================== -->
+<div class="page cta-page">
+  <h2>EN LISTA!</h2>
+  <p>Una plataforma completa, funcional y desplegada, lista para operar o escalar. La oportunidad de digitalizar un mercado que aun trabaja en papel.</p>
+  <div class="cta-contact">
+    <div class="row"><strong>Demo en vivo:</strong> enlistapro.web.app</div>
+    <div class="row"><strong>Estado:</strong> MVP en produccion</div>
+    <div class="row"><strong>Incluye:</strong> Codigo fuente + infraestructura + documentacion</div>
+  </div>
+</div>
+
+</body>
+</html>
