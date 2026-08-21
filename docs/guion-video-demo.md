@@ -161,3 +161,93 @@
 ---
 
 **EN LISTA!** — Guion de video demo · enlistapro.web.app
+
+
+
+---
+---
+
+# ⚡ VERSION CORTA — 30 SEGUNDOS (Redes / WhatsApp)
+
+**Duracion:** 30 seg | **Formato:** Vertical 9:16 (Reels / Stories / TikTok / Estado WhatsApp) | **Tono:** Rapido, directo, alto impacto
+
+> 💡 Esta version prioriza lo MAS visual y vendedor. Cortes rapidos, sin explicar de mas. El objetivo es generar curiosidad y que pidan la demo completa.
+
+---
+
+## 🎙️ GUION 30 SEGUNDOS
+
+### 🎬 GANCHO (0:00 – 0:04)
+**PANTALLA:** Escaneo de QR en la puerta → contador de aforo sube de golpe
+
+**VOZ EN OFF (energico):**
+> "Asi se controla el acceso de tu discoteca en 2026."
+
+**TEXTO EN PANTALLA:** `Adios listas de papel 🚫📋`
+
+---
+
+### 🎬 PROBLEMA + SOLUCION (0:04 – 0:10)
+**PANTALLA:** Dashboard admin con aforo en vivo y estadisticas
+
+**VOZ EN OFF:**
+> "Aforo en tiempo real, rendimiento de cada promotor, todo en una sola app."
+
+**TEXTO EN PANTALLA:** `Control total en vivo ⚡`
+
+---
+
+### 🎬 AUTO-REGISTRO (0:10 – 0:17)
+**PANTALLA:** Invitado se registra desde el link → aparece su QR
+
+**VOZ EN OFF:**
+> "Tus invitados se registran solos y reciben su QR al instante."
+
+**TEXTO EN PANTALLA:** `Registro en 10 segundos 📲`
+
+---
+
+### 🎬 CHECK-IN PUERTA (0:17 – 0:24)
+**PANTALLA:** Escaneo QR → check-in confirmado con el flash verde
+
+**VOZ EN OFF:**
+> "En la puerta: escaneas, ingresa, listo. Sin filas."
+
+**TEXTO EN PANTALLA:** `Check-in en 1 segundo ✅`
+
+---
+
+### 🎬 CIERRE / CTA (0:24 – 0:30)
+**PANTALLA:** Logo EN LISTA! + sitio web
+
+**VOZ EN OFF:**
+> "EN LISTA! Digitaliza tu local hoy."
+
+**TEXTO EN PANTALLA:** `enlistapro.web.app` + `Escribinos por DM 💬`
+
+---
+
+## ⏱️ RESUMEN VERSION CORTA
+
+| Segmento | Tiempo | Foco |
+|----------|--------|------|
+| Gancho | 0:00–0:04 | Escaneo QR (visual fuerte) |
+| Problema/Solucion | 0:04–0:10 | Dashboard en vivo |
+| Auto-registro | 0:10–0:17 | Invitado + QR |
+| Check-in | 0:17–0:24 | Escaneo en puerta |
+| Cierre | 0:24–0:30 | Logo + CTA |
+
+---
+
+## 💡 TIPS PARA LA VERSION CORTA
+
+1. **Los primeros 4 segundos definen todo** — arranca con la accion mas visual (el escaneo QR con el flash verde)
+2. **Sin silencios** — musica energica de fondo todo el tiempo (beat de reggaeton o electronica)
+3. **Texto grande en pantalla** — se debe entender aunque lo vean sin sonido
+4. **Formato vertical obligatorio** (9:16) para Reels, Stories y TikTok
+5. **Termina con un CTA claro** — "Escribinos por DM" o "Link en bio"
+6. **Hashtags sugeridos:** #discoteca #eventos #rrpp #controldeacceso #nightlife #boliche
+
+---
+
+**EN LISTA!** — Guion version corta 30s · enlistapro.web.app
