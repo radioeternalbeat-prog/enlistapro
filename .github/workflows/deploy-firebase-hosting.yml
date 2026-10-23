@@ -1,0 +1,53 @@
+name: Deploy Firebase Hosting
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-hosting-production
+  cancel-in-progress: true
+
+env:
+  FIREBASE_PROJECT_ID: app-happybeat
+  FIREBASE_SITE_ID: enlistapro
+
+jobs:
+  build-and-deploy:
+    name: Build and deploy to Firebase Hosting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build Vite application
+        run: npm run build
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools
+
+      - name: Deploy Firebase Hosting site
+        run: >-
+          firebase deploy
+          --only hosting:${{ env.FIREBASE_SITE_ID }}
+          --project ${{ env.FIREBASE_PROJECT_ID }}
+          --non-interactive
