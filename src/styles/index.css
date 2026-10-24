@@ -497,3 +497,10 @@ a { color: var(--accent-primary); text-decoration: none; }
 .icon-btn { display: inline-grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: transparent; cursor: pointer; transition: all var(--transition-fast); }
 .icon-btn-danger { color: var(--danger); border-color: rgba(255,51,102,.25); }
 .icon-btn-danger:hover { background: var(--danger-bg); border-color: var(--danger); box-shadow: 0 0 14px var(--danger-glow); transform: translateY(-1px); }
+
+.admin-list-builder { margin-bottom: 24px; }
+.admin-list-builder .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.admin-guest-form { max-width: 760px; margin-top: 18px; }
+.admin-guest-form.is-disabled { opacity: .62; }
+.admin-guest-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 620px) { .admin-list-builder .card-header { flex-direction: column; }.admin-guest-fields { grid-template-columns: 1fr; } }
