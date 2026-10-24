@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase.js';
 
 const DEVICE_KEY = 'enlista_device_id';
@@ -85,22 +85,10 @@ export async function validateLicense() {
 }
 
 // ==========================================
-// CREACION DE LICENCIAS (Mock para el flujo de pago)
+// CREACION DE LICENCIAS
 // ==========================================
-export async function generateNewLicense(email, plan = 'PRO') {
-  const newKey = 'ENLS-' + Math.random().toString(36).substr(2, 4).toUpperCase() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
-  
-  const licenseData = {
-    key: newKey,
-    email: email,
-    plan: plan,
-    maxDevices: 3,
-    devices: [],
-    status: 'active',
-    createdAt: serverTimestamp(),
-  };
-
-  await setDoc(doc(db, 'licenses', newKey), licenseData);
-  
-  return newKey;
+// La licencia de creador ya fue emitida una sola vez.
+// Las nuevas licencias deben originarse en el backend después de un pago aprobado.
+export async function generateNewLicense() {
+  throw new Error('LICENSE_CREATION_REQUIRES_APPROVED_PAYMENT');
 }
