@@ -175,6 +175,22 @@ class Store {
     return user;
   }
 
+  updateUser(userId, updates) {
+    const users = this.state.users.map(user =>
+      user.id === userId ? { ...user, ...updates } : user
+    );
+    this.set('users', users);
+    return users.find(user => user.id === userId);
+  }
+
+  deactivateUser(userId) {
+    return this.updateUser(userId, { active: false, deactivatedAt: new Date().toISOString() });
+  }
+
+  reactivateUser(userId) {
+    return this.updateUser(userId, { active: true, reactivatedAt: new Date().toISOString() });
+  }
+
   // --- Event Operations ---
   addEvent(event) {
     const events = [...this.state.events, event];

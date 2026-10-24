@@ -77,7 +77,7 @@ async function init() {
 
   // Check if user is already logged in
   const user = store.get('currentUser');
-  if (user) {
+  if (user && user.active !== false) {
     switch (user.role) {
       case 'admin':
         router.navigate('admin');
@@ -92,6 +92,7 @@ async function init() {
         router.navigate('login');
     }
   } else {
+    if (user?.active === false) store.set('currentUser', null);
     router.navigate('login');
   }
 }

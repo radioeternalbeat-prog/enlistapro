@@ -61,7 +61,7 @@ export function renderLogin(container) {
   container.querySelectorAll('.demo-login').forEach(btn => {
     btn.addEventListener('click', () => {
       const role = btn.dataset.role;
-      const user = store.get('users').find(u => u.role === role);
+      const user = store.get('users').find(u => u.role === role && u.active !== false);
       if (user) {
         store.set('currentUser', user);
         showToast(`Bienvenido, ${user.displayName}`, 'success');
@@ -79,14 +79,15 @@ export function renderLogin(container) {
   document.getElementById('login-form')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const email = document.getElementById('login-email').value;
-    const user = store.get('users').find(u => u.email === email);
+    const user = store.get('users').find(u => u.email.toLowerCase() === email.toLowerCase() && u.active !== false);
     
     if (user) {
       store.set('currentUser', user);
       showToast(`Bienvenido, ${user.displayName}`, 'success');
       navigateByRole(user.role);
     } else {
-      showToast('Credenciales invalidas', 'error');
+      const inactiveUser = store.get('users').find(u => u.email.toLowerCase() === email.toLowerCase() && u.active === false);
+      showToast(inactiveUser ? 'Esta cuenta fue desactivada por un administrador' : 'Credenciales invalidas', 'error');
     }
   });
 }

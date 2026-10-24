@@ -10,7 +10,7 @@ import QRCode from 'qrcode';
 
 export function renderRRPP(container) {
   const user = store.get('currentUser');
-  if (!user || user.role !== 'rrpp') { router.navigate('login'); return; }
+  if (!user || user.role !== 'rrpp' || user.active === false) { store.set('currentUser', null); router.navigate('login'); return; }
 
   container.innerHTML = `
     <div class="dashboard">
