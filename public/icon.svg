@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">EN LISTA!</title>
+  <desc id="desc">Icono morado con una marca de verificación blanca</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7B2FFF"/>
+      <stop offset="1" stop-color="#A855F7"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#35D9FF" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#35D9FF" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#05050A" flood-opacity=".45"/>
+    </filter>
+  </defs>
+  <rect x="34" y="34" width="444" height="444" rx="112" fill="#0A0A0F"/>
+  <rect x="52" y="52" width="408" height="408" rx="96" fill="url(#bg)" filter="url(#shadow)"/>
+  <path d="M52 270c74-80 170-119 285-116 55 2 96 14 123 27v279H52Z" fill="url(#shine)"/>
+  <path d="m151 263 66 67 145-153" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="42"/>
+  <circle cx="391" cy="116" r="15" fill="#35D9FF"/>
+</svg>
