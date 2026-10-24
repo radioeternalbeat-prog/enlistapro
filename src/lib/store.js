@@ -191,6 +191,12 @@ class Store {
     return this.updateUser(userId, { active: true, reactivatedAt: new Date().toISOString() });
   }
 
+  removeUser(userId) {
+    const users = this.state.users.filter(user => user.id !== userId);
+    this.set('users', users);
+    return true;
+  }
+
   // --- Event Operations ---
   addEvent(event) {
     const events = [...this.state.events, event];

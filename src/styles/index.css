@@ -492,3 +492,8 @@ a { color: var(--accent-primary); text-decoration: none; }
 .promoter-card-footer small { color: var(--text-secondary); font-size: .72rem; line-height: 1.35; }
 .promoter-form-note { padding: 10px 12px; border-radius: var(--radius-sm); background: rgba(123,47,255,.08); color: var(--text-secondary); font-size: .75rem; line-height: 1.45; }
 @media (max-width: 520px) { .promoters-grid { grid-template-columns: 1fr; }.promoter-card-footer { align-items: flex-end; }.promoter-card-footer small { max-width: 155px; } }
+
+.promoter-actions { display: inline-flex; align-items: center; gap: 8px; }
+.icon-btn { display: inline-grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: transparent; cursor: pointer; transition: all var(--transition-fast); }
+.icon-btn-danger { color: var(--danger); border-color: rgba(255,51,102,.25); }
+.icon-btn-danger:hover { background: var(--danger-bg); border-color: var(--danger); box-shadow: 0 0 14px var(--danger-glow); transform: translateY(-1px); }

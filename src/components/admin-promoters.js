@@ -45,6 +45,9 @@ export function renderAdminPromoters(container) {
   container.querySelectorAll('[data-promoter-action="toggle"]').forEach(button => {
     button.addEventListener('click', () => togglePromoter(button.dataset.promoterId, container));
   });
+  container.querySelectorAll('[data-promoter-action="delete"]').forEach(button => {
+    button.addEventListener('click', () => deletePromoter(button.dataset.promoterId, container));
+  });
 }
 
 function promoterCard(promoter) {
@@ -85,7 +88,10 @@ function promoterCard(promoter) {
         </div>
         <div class="promoter-card-footer">
           <small>${active ? 'Puede ingresar y gestionar sus listas.' : 'Conserva su historial, pero no puede ingresar.'}</small>
-          <button class="btn ${actionClass} btn-sm" type="button" data-promoter-action="toggle" data-promoter-id="${escapeHtml(promoter.id)}">${actionLabel}</button>
+          <div class="promoter-actions">
+            <button class="btn ${actionClass} btn-sm" type="button" data-promoter-action="toggle" data-promoter-id="${escapeHtml(promoter.id)}">${actionLabel}</button>
+            ${active ? '' : `<button class="icon-btn icon-btn-danger" type="button" title="Eliminar promotor permanentemente" aria-label="Eliminar ${name}" data-promoter-action="delete" data-promoter-id="${escapeHtml(promoter.id)}">🗑️</button>`}
+          </div>
         </div>
       </div>
     </article>
@@ -146,5 +152,17 @@ function togglePromoter(promoterId, container) {
     showToast('Promotor reactivado', 'success');
   }
 
+  renderAdminPromoters(container);
+}
+
+function deletePromoter(promoterId, container) {
+  const promoter = store.get('users').find(user => user.id === promoterId);
+  if (!promoter || promoter.active !== false) return;
+
+  const confirmed = window.confirm(`¿Eliminar permanentemente a ${promoter.displayName}? Se quitará el perfil, pero sus invitados e historial se conservarán.`);
+  if (!confirmed) return;
+
+  store.removeUser(promoterId);
+  showToast('Promotor eliminado', 'success');
   renderAdminPromoters(container);
 }
