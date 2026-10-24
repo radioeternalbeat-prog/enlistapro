@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FIREBASE_PROJECT_ID: app-happybeat
+  FIREBASE_PROJECT_ID: en-lista-app-z1e6wt
   FIREBASE_SITE_ID: enlistapro
 
 jobs:

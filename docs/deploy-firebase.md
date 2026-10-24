@@ -1,10 +1,10 @@
 # Despliegue automático a Firebase Hosting
 
-El workflow `.github/workflows/deploy-firebase-hosting.yml` compila la aplicación y despliega el site `enlistapro` al proyecto Firebase `app-happybeat` cada vez que se hace push a `main`. También puede ejecutarse manualmente desde la pestaña **Actions** de GitHub.
+El workflow `.github/workflows/deploy-firebase-hosting.yml` compila la aplicación y despliega el site `enlistapro` al proyecto Firebase `en-lista-app-z1e6wt` cada vez que se hace push a `main`. También puede ejecutarse manualmente desde la pestaña **Actions** de GitHub.
 
 ## Configuración necesaria una sola vez
 
-El repositorio necesita un secreto de GitHub llamado `FIREBASE_SERVICE_ACCOUNT` con el JSON de una cuenta de servicio que tenga permisos para desplegar Firebase Hosting en el proyecto `app-happybeat`.
+El repositorio necesita un secreto de GitHub llamado `FIREBASE_SERVICE_ACCOUNT` con el JSON de una cuenta de servicio que tenga permisos para desplegar Firebase Hosting en el proyecto `en-lista-app-z1e6wt`.
 
 En GitHub:
 
@@ -30,8 +30,8 @@ Si el build falla, el paso de despliegue no se ejecuta.
 
 El workflow usa estos valores definidos en `firebase.json` y en el repositorio:
 
-- Proyecto Firebase: `app-happybeat`
+- Proyecto Firebase: `en-lista-app-z1e6wt`
 - Site de Hosting: `enlistapro`
 - Carpeta pública: `dist`
 
-Si la web pública pertenece en realidad al proyecto Firebase `en-lista-app-z1e6wt`, hay que cambiar `FIREBASE_PROJECT_ID` en el workflow y confirmar que ese proyecto también tenga un site llamado `enlistapro` antes de activar el despliegue.
+El frontend también usa `en-lista-app-z1e6wt` en `src/lib/firebase.js`, por lo que Hosting, Firestore y Auth quedan alineados con el proyecto de producción.

@@ -1,16 +1,16 @@
 // Firebase configuration for EN LISTA!
-// Replace these values with your actual Firebase project config
+// Production Firebase project: en-lista-app-z1e6wt
 import { initializeApp } from 'firebase/app';
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDPBFvtSV2PITQC41ObFpWXv0C3df-gmd4",
-  authDomain: "app-happybeat.firebaseapp.com",
-  projectId: "app-happybeat",
-  storageBucket: "app-happybeat.firebasestorage.app",
-  messagingSenderId: "11149842884",
-  appId: "1:11149842884:web:431dd2502cdb24c11bec91"
+  apiKey: "AIzaSyDG2rjUZKMPSrCBwNOwHr9W-YJGvPbub94",
+  authDomain: "en-lista-app-z1e6wt.firebaseapp.com",
+  projectId: "en-lista-app-z1e6wt",
+  storageBucket: "en-lista-app-z1e6wt.firebasestorage.app",
+  messagingSenderId: "156010061349",
+  appId: "1:156010061349:web:d4afa3c34c7535b38e29cc"
 };
 
 const app = initializeApp(firebaseConfig);
