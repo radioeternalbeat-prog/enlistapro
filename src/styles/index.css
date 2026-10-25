@@ -504,3 +504,14 @@ a { color: var(--accent-primary); text-decoration: none; }
 .admin-guest-form.is-disabled { opacity: .62; }
 .admin-guest-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 620px) { .admin-list-builder .card-header { flex-direction: column; }.admin-guest-fields { grid-template-columns: 1fr; } }
+
+/* --- Initial RRPP selector --- */
+.promoter-selector-intro { margin-bottom: 16px; line-height: 1.45; }
+.promoter-selector-list { display: grid; gap: 10px; max-height: 330px; overflow-y: auto; }
+.promoter-selector-option { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); text-align: left; cursor: pointer; transition: all var(--transition-fast); }
+.promoter-selector-option:hover, .promoter-selector-option:focus-visible { border-color: var(--accent-primary); background: rgba(123,47,255,.12); transform: translateY(-1px); outline: none; }
+.promoter-selector-avatar { flex: 0 0 40px; width: 40px; height: 40px; font-size: .82rem; }
+.promoter-selector-info { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 3px; }
+.promoter-selector-info strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.promoter-selector-info small { overflow: hidden; color: var(--text-secondary); text-overflow: ellipsis; white-space: nowrap; }
+.promoter-selector-arrow { color: var(--accent-primary); font-size: 1.5rem; line-height: 1; }

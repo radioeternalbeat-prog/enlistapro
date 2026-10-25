@@ -4,7 +4,7 @@
 
 import store from '../lib/store.js';
 import router from '../lib/router.js';
-import { showToast } from '../lib/utils.js';
+import { showModal, closeModal, showToast, getInitials } from '../lib/utils.js';
 
 export function renderLogin(container) {
   container.innerHTML = `
@@ -42,7 +42,7 @@ export function renderLogin(container) {
         </div>
 
         <div class="mt-24 text-center">
-          <p class="text-sm text-secondary">Demo — Selecciona un rol:</p>
+          <p class="text-sm text-secondary">Seleccioná un rol para ingresar:</p>
           <div class="flex gap-8 mt-8" style="flex-wrap: wrap; justify-content: center;">
             <button class="btn btn-ghost btn-sm demo-login" data-role="admin">👑 Admin</button>
             <button class="btn btn-ghost btn-sm demo-login" data-role="rrpp">🎤 RRPP</button>
@@ -61,6 +61,10 @@ export function renderLogin(container) {
   container.querySelectorAll('.demo-login').forEach(btn => {
     btn.addEventListener('click', () => {
       const role = btn.dataset.role;
+      if (role === 'rrpp') {
+        openPromoterSelector();
+        return;
+      }
       const user = store.get('users').find(u => u.role === role && u.active !== false);
       if (user) {
         store.set('currentUser', user);
@@ -90,6 +94,43 @@ export function renderLogin(container) {
       showToast(inactiveUser ? 'Esta cuenta fue desactivada por un administrador' : 'Credenciales invalidas', 'error');
     }
   });
+}
+
+function openPromoterSelector() {
+  const promoters = store.get('users').filter(user => user.role === 'rrpp' && user.active !== false);
+  if (promoters.length === 0) {
+    showToast('No hay promotores RRPP activos disponibles', 'error');
+    return;
+  }
+
+  showModal('Seleccioná tu promotor', `
+    <p class="text-sm text-secondary promoter-selector-intro">Elegí la cuenta RRPP que vas a usar en este dispositivo para administrar tu propia lista.</p>
+    <div class="promoter-selector-list">
+      ${promoters.map(promoter => `<button class="promoter-selector-option" type="button" data-promoter-id="${escapeHtml(promoter.id)}"><span class="user-avatar promoter-selector-avatar">${escapeHtml(getInitials(promoter.displayName || '?'))}</span><span class="promoter-selector-info"><strong>${escapeHtml(promoter.displayName)}</strong><small>${escapeHtml(promoter.email)}</small></span><span class="promoter-selector-arrow">›</span></button>`).join('')}
+    </div>
+    <button class="btn btn-ghost btn-block mt-16" type="button" id="cancel-promoter-selection">Cancelar</button>
+  `);
+
+  document.getElementById('cancel-promoter-selection')?.addEventListener('click', closeModal);
+  document.querySelectorAll('.promoter-selector-option').forEach(button => {
+    button.addEventListener('click', () => {
+      const user = store.get('users').find(item => item.id === button.dataset.promoterId && item.role === 'rrpp' && item.active !== false);
+      if (!user) {
+        closeModal();
+        showToast('Este promotor ya no está activo', 'error');
+        return;
+      }
+      store.set('currentUser', user);
+      store.set('sidebarSection', 'my-lists');
+      closeModal();
+      showToast(`Bienvenido, ${user.displayName}`, 'success');
+      router.navigate('rrpp');
+    });
+  });
+}
+
+function escapeHtml(value = '') {
+  return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 }
 
 function navigateByRole(role) {
