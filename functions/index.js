@@ -3,7 +3,7 @@
 // Secure payment processing with Mercado Pago
 // ============================================
 
-const { onRequest } = require("firebase-functions/v2/https");
+const { onRequest, onCall, HttpsError } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
@@ -225,3 +225,78 @@ exports.checkPaymentStatus = onRequest(
     }
   }
 );
+
+// ============================================
+// 4. CREATE PROMOTER ACCOUNT
+// Only an authenticated Admin may create an RRPP.
+// ============================================
+exports.createPromoter = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Debes iniciar sesión como administrador.");
+  }
+
+  const caller = await db.collection("users").doc(request.auth.uid).get();
+  const isAdmin = request.auth.token.admin === true || (caller.exists && caller.data().role === "admin" && caller.data().active !== false);
+  if (!isAdmin) {
+    throw new HttpsError("permission-denied", "Solo un administrador puede crear promotores.");
+  }
+
+  const { name, email, password, phone = "" } = request.data || {};
+  if (!name || !email || !password || password.length < 6) {
+    throw new HttpsError("invalid-argument", "Nombre, email y contraseña de al menos 6 caracteres son obligatorios.");
+  }
+
+  try {
+    const userRecord = await admin.auth().createUser({
+      email: email.toLowerCase(),
+      password,
+      displayName: name,
+    });
+    const profile = {
+      uid: userRecord.uid,
+      id: userRecord.uid,
+      displayName: name,
+      email: email.toLowerCase(),
+      phone,
+      role: "rrpp",
+      active: true,
+      createdBy: request.auth.uid,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    await db.collection("promoters").doc(userRecord.uid).set(profile);
+    const legacyStateRef = db.collection("enlista").doc("global_state");
+    const legacyState = await legacyStateRef.get();
+    const legacyUsers = legacyState.exists ? (legacyState.data().users || []) : [];
+    await legacyStateRef.set({ users: [...legacyUsers.filter(user => user.id !== userRecord.uid), profile] }, { merge: true });
+    return { uid: userRecord.uid, id: userRecord.uid, displayName: name, email: email.toLowerCase(), phone, role: "rrpp", active: true };
+  } catch (error) {
+    if (error.code === "auth/email-already-exists") {
+      throw new HttpsError("already-exists", "Ese email ya está registrado.");
+    }
+    console.error("Error creating promoter:", error);
+    throw new HttpsError("internal", "No se pudo crear la cuenta RRPP.");
+  }
+});
+
+exports.managePromoter = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
+  const caller = await db.collection("users").doc(request.auth.uid).get();
+  const isAdmin = request.auth.token.admin === true || (caller.exists && caller.data().role === "admin" && caller.data().active !== false);
+  if (!isAdmin) throw new HttpsError("permission-denied", "Solo un administrador puede modificar promotores.");
+
+  const { uid, action } = request.data || {};
+  if (!uid || !["deactivate", "reactivate", "delete"].includes(action)) throw new HttpsError("invalid-argument", "Operación inválida.");
+  const promoterRef = db.collection("promoters").doc(uid);
+  const promoter = await promoterRef.get();
+  if (!promoter.exists) throw new HttpsError("not-found", "Promotor no encontrado.");
+
+  if (action === "delete") {
+    await admin.auth().deleteUser(uid);
+    await promoterRef.delete();
+  } else {
+    const active = action === "reactivate";
+    await admin.auth().updateUser(uid, { disabled: !active });
+    await promoterRef.update({ active, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+  }
+  return { uid, action };
+});

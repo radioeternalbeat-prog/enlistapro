@@ -17,6 +17,9 @@ import { renderSignup } from './views/signup.js';
 import { renderActivate } from './views/activate.js';
 import { renderBuy } from './views/buy.js';
 import { validateLicense } from './lib/license.js';
+import { auth } from './lib/firebase.js';
+import { getUserProfile } from './lib/auth.js';
+import { onAuthStateChanged } from 'firebase/auth';
 
 // Register routes
 router.register('login', renderLogin);
@@ -75,8 +78,13 @@ async function init() {
     return; // Detenemos el inicio de la app, el usuario no pasa de aqui.
   }
 
-  // Check if user is already logged in
-  const user = store.get('currentUser');
+  // Firebase Authentication is the source of truth; localStorage alone cannot grant access.
+  const firebaseUser = await new Promise(resolve => {
+    const unsubscribe = onAuthStateChanged(auth, user => { unsubscribe(); resolve(user); });
+  });
+  const profile = firebaseUser ? await getUserProfile(firebaseUser.uid) : null;
+  const user = profile && profile.active !== false ? profile : null;
+  store.set('currentUser', user);
   if (user && user.active !== false) {
     switch (user.role) {
       case 'admin':
@@ -92,7 +100,6 @@ async function init() {
         router.navigate('login');
     }
   } else {
-    if (user?.active === false) store.set('currentUser', null);
     router.navigate('login');
   }
 }

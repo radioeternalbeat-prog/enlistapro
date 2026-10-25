@@ -5,6 +5,7 @@
 import store from '../lib/store.js';
 import router from '../lib/router.js';
 import { getInitials } from '../lib/utils.js';
+import { logout } from '../lib/auth.js';
 
 export function renderSidebar(container, navItems, onNavigate) {
   const user = store.get('currentUser');
@@ -49,7 +50,8 @@ export function renderSidebar(container, navItems, onNavigate) {
     });
   });
 
-  document.getElementById('logout-btn')?.addEventListener('click', () => {
+  document.getElementById('logout-btn')?.addEventListener('click', async () => {
+    await logout();
     store.set('currentUser', null);
     router.navigate('login');
   });

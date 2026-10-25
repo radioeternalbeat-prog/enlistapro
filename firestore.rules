@@ -2,24 +2,63 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Reglas para Licencias Comerciales
-    // Permite lectura para validacion y actualizacion para registrar nuevos dispositivos
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && (request.auth.token.admin == true
+          || (exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.active != false));
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // Perfiles de administradores creados mediante Firebase Authentication.
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      // Bootstrap limitado al email de creador; los demás perfiles se crean en backend.
+      allow create: if isOwner(uid)
+        && request.resource.data.role == 'admin'
+        && request.auth.token.email == 'eternalbeatmedioscl@gmail.com';
+      allow update: if isAdmin() || (isOwner(uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName']));
+      allow delete: if isAdmin();
+    }
+
+    // Cuenta RRPP: solo el propio RRPP puede leer su perfil; solo Admin puede modificarlo.
+    match /promoters/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Invitados individuales: el RRPP solo ve y modifica los que le pertenecen.
+    match /guests/{guestId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.addedBy == request.auth.uid);
+      allow create: if isAdmin() || (signedIn() && request.resource.data.addedBy == request.auth.uid);
+      allow update: if isAdmin() || (signedIn() && resource.data.addedBy == request.auth.uid && request.resource.data.addedBy == resource.data.addedBy);
+      allow delete: if isAdmin() || (signedIn() && resource.data.addedBy == request.auth.uid);
+    }
+
+    // Licencias: validación pública y registro limitado de dispositivos.
     match /licenses/{licenseKey} {
       allow read: if true;
       allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['devices', 'lastUsedAt']);
-      allow create: if true; 
+      allow create: if true;
     }
 
-    // Registros de pagos (para verificacion manual del admin)
+    // Pagos: se conserva compatibilidad con el flujo existente mientras se migra a Functions.
     match /payment_records/{recordId} {
       allow create: if true;
       allow read: if true;
-      // Solo el admin puede actualizar (marcar como verificado)
       allow update: if true;
     }
 
-    // Reglas para el Estado Global de EN LISTA!
+    // LEGACY: la app actual todavía usa este documento para eventos públicos y compatibilidad.
+    // Debe eliminarse después de migrar todos los eventos, invitados y links a colecciones individuales.
     match /enlista/global_state {
       allow read, write: if true;
     }

@@ -5,6 +5,7 @@
 
 import store from '../lib/store.js';
 import { showModal, closeModal, showToast, generateId, getInitials, generateQRValue } from '../lib/utils.js';
+import { authErrorMessage, createPromoterAccount, managePromoterAccount } from '../lib/auth.js';
 
 function escapeHtml(value = '') {
   return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
@@ -109,32 +110,48 @@ function promoterCard(promoter) {
 }
 
 function openCreatePromoterModal(container) {
-  showModal('Nuevo promotor', `<form id="create-promoter-form"><div class="form-group"><label for="promoter-name">Nombre completo</label><input type="text" class="form-input" id="promoter-name" placeholder="Nombre y apellido" autocomplete="name" required /></div><div class="form-group"><label for="promoter-email">Email</label><input type="email" class="form-input" id="promoter-email" placeholder="email@ejemplo.com" autocomplete="email" required /></div><div class="form-group"><label for="promoter-phone">Teléfono <span class="text-secondary">(opcional)</span></label><input type="tel" class="form-input" id="promoter-phone" placeholder="+54 11 ..." autocomplete="tel" /></div><div class="promoter-form-note">El nuevo RRPP quedará activo inmediatamente y podrá ingresar con el email registrado.</div><div class="flex gap-12 mt-24"><button type="button" class="btn btn-ghost flex-1" id="cancel-promoter-btn">Cancelar</button><button type="submit" class="btn btn-primary flex-1">Crear promotor</button></div></form>`);
+  showModal('Nuevo promotor', `<form id="create-promoter-form"><div class="form-group"><label for="promoter-name">Nombre completo</label><input type="text" class="form-input" id="promoter-name" placeholder="Nombre y apellido" autocomplete="name" required /></div><div class="form-group"><label for="promoter-email">Email</label><input type="email" class="form-input" id="promoter-email" placeholder="email@ejemplo.com" autocomplete="email" required /></div><div class="form-group"><label for="promoter-password">Contraseña inicial</label><input type="password" class="form-input" id="promoter-password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" minlength="6" required /></div><div class="form-group"><label for="promoter-phone">Teléfono <span class="text-secondary">(opcional)</span></label><input type="tel" class="form-input" id="promoter-phone" placeholder="+54 11 ..." autocomplete="tel" /></div><div class="promoter-form-note">La cuenta se creará en Firebase Authentication. Compartí la contraseña inicial con el RRPP de forma segura.</div><div class="flex gap-12 mt-24"><button type="button" class="btn btn-ghost flex-1" id="cancel-promoter-btn">Cancelar</button><button type="submit" class="btn btn-primary flex-1" id="create-promoter-submit">Crear promotor</button></div></form>`);
   document.getElementById('cancel-promoter-btn')?.addEventListener('click', closeModal);
-  document.getElementById('create-promoter-form')?.addEventListener('submit', event => {
+  document.getElementById('create-promoter-form')?.addEventListener('submit', async event => {
     event.preventDefault();
     const displayName = document.getElementById('promoter-name').value.trim();
     const email = document.getElementById('promoter-email').value.trim().toLowerCase();
+    const password = document.getElementById('promoter-password').value;
     const phone = document.getElementById('promoter-phone').value.trim();
     if (store.get('users').some(user => user.email?.toLowerCase() === email)) { showToast('Ya existe un usuario con ese email', 'error'); return; }
-    store.addUser({ id: generateId('rrpp'), displayName, email, phone, role: 'rrpp', active: true, createdAt: new Date().toISOString(), createdBy: store.get('currentUser')?.id });
-    closeModal(); showToast('Promotor creado y activado', 'success'); renderAdminPromoters(container);
+    const submit = document.getElementById('create-promoter-submit');
+    submit.disabled = true;
+    submit.textContent = 'Creando cuenta...';
+    try {
+      const profile = await createPromoterAccount({ name: displayName, email, password, phone });
+      store.addUser(profile);
+      closeModal(); showToast('Promotor creado y activado', 'success'); renderAdminPromoters(container);
+    } catch (error) {
+      showToast(authErrorMessage(error), 'error');
+      submit.disabled = false;
+      submit.textContent = 'Crear promotor';
+    }
   });
 }
 
-function togglePromoter(promoterId, container) {
+async function togglePromoter(promoterId, container) {
   const promoter = store.get('users').find(user => user.id === promoterId);
   if (!promoter) return;
   if (promoter.active !== false) {
     if (!window.confirm(`¿Desactivar a ${promoter.displayName}? Ya no podrá ingresar, pero se conservarán sus listas e historial.`)) return;
-    store.deactivateUser(promoterId); showToast('Promotor desactivado', 'success');
-  } else { store.reactivateUser(promoterId); showToast('Promotor reactivado', 'success'); }
+    try { await managePromoterAccount(promoterId, 'deactivate'); store.deactivateUser(promoterId); showToast('Promotor desactivado', 'success'); }
+    catch (error) { showToast(authErrorMessage(error), 'error'); }
+  } else {
+    try { await managePromoterAccount(promoterId, 'reactivate'); store.reactivateUser(promoterId); showToast('Promotor reactivado', 'success'); }
+    catch (error) { showToast(authErrorMessage(error), 'error'); }
+  }
   renderAdminPromoters(container);
 }
 
-function deletePromoter(promoterId, container) {
+async function deletePromoter(promoterId, container) {
   const promoter = store.get('users').find(user => user.id === promoterId);
   if (!promoter || promoter.active !== false) return;
   if (!window.confirm(`¿Eliminar permanentemente a ${promoter.displayName}? Se quitará el perfil, pero sus invitados e historial se conservarán.`)) return;
-  store.removeUser(promoterId); showToast('Promotor eliminado', 'success'); renderAdminPromoters(container);
+  try { await managePromoterAccount(promoterId, 'delete'); store.removeUser(promoterId); showToast('Promotor eliminado', 'success'); renderAdminPromoters(container); }
+  catch (error) { showToast(authErrorMessage(error), 'error'); }
 }

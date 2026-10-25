@@ -2,9 +2,9 @@
 // EN LISTA! — Admin Signup View
 // ============================================
 
-import store from '../lib/store.js';
 import router from '../lib/router.js';
-import { showToast, generateId } from '../lib/utils.js';
+import { showToast } from '../lib/utils.js';
+import { authErrorMessage, createAdminAccount } from '../lib/auth.js';
 
 export function renderSignup(container) {
   container.innerHTML = `
@@ -78,24 +78,15 @@ export function renderSignup(container) {
       btn.disabled = true;
       btn.innerHTML = '<span class="loading-spinner"></span> Registrando...';
       
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      const newUser = {
-        id: 'admin_' + generateId(6),
-        email: email,
-        displayName: name,
-        role: 'admin',
-        active: true
-      };
-
-      store.addUser(newUser);
+      if (password.length < 6) throw new Error('auth/weak-password');
+      const newUser = await createAdminAccount({ name, email, password });
       store.set('currentUser', newUser);
       showToast('Cuenta de administrador creada con exito!', 'success');
       router.navigate('admin');
 
     } catch (err) {
       console.error(err);
-      showToast('Error al crear cuenta', 'error');
+      showToast(authErrorMessage(err), 'error');
       const btn = document.getElementById('signup-btn');
       btn.disabled = false;
       btn.innerHTML = 'Registrarse como Admin';
