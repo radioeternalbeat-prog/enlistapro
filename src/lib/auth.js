@@ -1,20 +1,49 @@
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
-import { auth, db, functions } from './firebase.js';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
+import { auth, db } from './firebase.js';
 
 export async function signIn(email, password) {
   const credential = await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
   const profile = await getUserProfile(credential.user.uid);
-  if (!profile || profile.active === false) { await signOut(auth); throw new Error('ACCOUNT_INACTIVE'); }
+  if (!profile || profile.active === false || profile.status === 'rejected') {
+    await signOut(auth);
+    throw new Error(profile?.status === 'rejected' ? 'ACCOUNT_REJECTED' : 'ACCOUNT_INACTIVE');
+  }
+  if (profile.status === 'pending') {
+    await signOut(auth);
+    throw new Error('ACCOUNT_PENDING');
+  }
   return { authUser: credential.user, profile };
 }
 
 export async function createAdminAccount({ name, email, password }) {
   const credential = await createUserWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
-  const profile = { uid: credential.user.uid, id: credential.user.uid, email: credential.user.email, displayName: name.trim(), role: 'admin', active: true };
+  const profile = { uid: credential.user.uid, id: credential.user.uid, email: credential.user.email, displayName: name.trim(), role: 'admin', active: true, status: 'approved' };
   await setDoc(doc(db, 'users', credential.user.uid), profile);
   return profile;
+}
+
+export async function registerPromoterRequest({ name, email, password, phone = '' }) {
+  const credential = await createUserWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
+  const profile = {
+    uid: credential.user.uid,
+    id: credential.user.uid,
+    displayName: name.trim(),
+    email: credential.user.email,
+    phone: phone.trim(),
+    role: 'rrpp',
+    status: 'pending',
+    active: false,
+    createdAt: new Date().toISOString(),
+  };
+  try {
+    await setDoc(doc(db, 'promoters', credential.user.uid), profile);
+    await signOut(auth);
+    return profile;
+  } catch (error) {
+    await signOut(auth);
+    throw error;
+  }
 }
 
 export async function getUserProfile(uid) {
@@ -24,24 +53,18 @@ export async function getUserProfile(uid) {
   return user.exists() ? user.data() : null;
 }
 
-export async function listActivePromoters() {
+export async function listPromoters() {
   const snapshot = await getDocs(collection(db, 'promoters'));
-  return snapshot.docs.map(item => item.data()).filter(profile => profile.active !== false);
+  return snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
 }
 
-export async function createPromoterAccount({ name, email, password, phone = '' }) {
-  const callable = httpsCallable(functions, 'createPromoter');
-  const result = await callable({ name: name.trim(), email: email.trim().toLowerCase(), password, phone: phone.trim() });
-  return result.data;
-}
-
-export async function managePromoterAccount(uid, action) {
-  const callable = httpsCallable(functions, 'managePromoter');
-  const result = await callable({ uid, action });
-  return result.data;
+export async function updatePromoterApproval(uid, status) {
+  if (!['approved', 'rejected', 'suspended'].includes(status)) throw new Error('INVALID_STATUS');
+  await updateDoc(doc(db, 'promoters', uid), { status, active: status === 'approved', reviewedAt: new Date().toISOString() });
 }
 
 export async function logout() { await signOut(auth); }
+export async function resetPassword(email) { await sendPasswordResetEmail(auth, email.trim().toLowerCase()); }
 
 export function authErrorMessage(error) {
   const messages = {
@@ -50,10 +73,11 @@ export function authErrorMessage(error) {
     'auth/email-already-in-use': 'Ese email ya está registrado.',
     'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
     'auth/too-many-requests': 'Demasiados intentos. Esperá unos minutos.',
-    'functions/permission-denied': 'Solo un administrador puede realizar esta operación.',
-    'functions/already-exists': 'Ese email ya está registrado.',
-    'functions/not-found': 'No se encontró el promotor.',
-    ACCOUNT_INACTIVE: 'Esta cuenta fue desactivada por un administrador.',
+    'permission-denied': 'No tenés permisos para realizar esta operación.',
+    ACCOUNT_INACTIVE: 'Esta cuenta está pendiente de aprobación o fue desactivada.',
+    ACCOUNT_PENDING: 'Tu solicitud está pendiente de aprobación por un administrador.',
+    ACCOUNT_REJECTED: 'Tu solicitud de acceso fue rechazada.',
+    INVALID_STATUS: 'Estado de aprobación inválido.',
   };
-  return messages[error?.code] || messages[error?.message] || 'No se pudo completar la autenticación.';
+  return messages[error?.code] || messages[error?.message] || 'No se pudo completar la operación.';
 }

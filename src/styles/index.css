@@ -515,3 +515,17 @@ a { color: var(--accent-primary); text-decoration: none; }
 .promoter-selector-info strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .promoter-selector-info small { overflow: hidden; color: var(--text-secondary); text-overflow: ellipsis; white-space: nowrap; }
 .promoter-selector-arrow { color: var(--accent-primary); font-size: 1.5rem; line-height: 1; }
+
+/* --- RRPP approval requests --- */
+.pending-requests-card { margin-bottom: 24px; border-color: rgba(255,184,0,.28); }
+.pending-requests-list { display: grid; gap: 12px; }
+.pending-request-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border-color); }
+.pending-request-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.pending-request-info { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 3px; }
+.pending-request-info strong { color: var(--text-primary); }
+.pending-request-info span, .pending-request-info small { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pending-request-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+@media (max-width: 640px) {
+  .pending-request-row { align-items: flex-start; flex-wrap: wrap; }
+  .pending-request-actions { width: 100%; margin-left: 50px; justify-content: flex-start; }
+}

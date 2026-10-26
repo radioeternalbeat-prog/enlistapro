@@ -45,9 +45,9 @@ jobs:
       - name: Install Firebase CLI
         run: npm install --global firebase-tools
 
-      - name: Deploy Hosting, Functions and Firestore rules
+      - name: Deploy Hosting and Firestore rules
         run: >-
           firebase deploy
-          --only hosting:${{ env.FIREBASE_SITE_ID }},functions,firestore:rules
+          --only hosting:${{ env.FIREBASE_SITE_ID }},firestore:rules
           --project ${{ env.FIREBASE_PROJECT_ID }}
           --non-interactive

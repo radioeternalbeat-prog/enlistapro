@@ -2,35 +2,46 @@
 
 ## Activar Email/Password
 
-En Firebase Console, abrir **Authentication → Sign-in method → Email/Password**, activar **Email/Password** y guardar. La app ya usa `signInWithEmailAndPassword` y `createUserWithEmailAndPassword`.
+En Firebase Console, abrir **Authentication → Sign-in method → Email/Password**, activar **Email/Password** y guardar.
+
+## Flujo RRPP sin Cloud Functions
+
+El RRPP solicita su propia cuenta desde la pantalla inicial:
+
+1. Pulsar **Solicitar cuenta RRPP**.
+2. Completar nombre, email, contraseña y teléfono opcional.
+3. Firebase Authentication crea la identidad.
+4. Firestore crea `promoters/{uid}` con `status: pending` y `active: false`.
+5. El Admin ve la solicitud en **Admin → Promotores**.
+6. El Admin puede aprobar, rechazar, suspender o reactivar el perfil.
+7. El RRPP solo puede ingresar cuando su perfil está `approved` y `active: true`.
+
+El Admin nunca recibe ni almacena la contraseña del RRPP. Para recuperar una contraseña se usa el correo de recuperación de Firebase.
 
 ## Primer administrador
 
-El primer Admin debe registrarse con el correo de creador configurado en las reglas:
+El primer Admin debe registrarse con:
 
 ```text
 eternalbeatmedioscl@gmail.com
 ```
 
-El registro crea el usuario de Firebase Authentication y su perfil en `users/{uid}`. Las reglas limitan el bootstrap de Admin a ese correo. Para agregar otros administradores se debe usar una operación backend posterior, no editar el navegador.
+Las reglas limitan el bootstrap de Admin a ese correo. Para agregar otros administradores se requiere una operación administrativa posterior.
 
-## Crear RRPP
+## Reglas de seguridad
 
-Una vez autenticado el Admin:
+- `users/{uid}`: lectura propia o Admin.
+- `promoters/{uid}`: el propietario puede crear solamente su propia solicitud pendiente; solo Admin puede aprobar, rechazar, suspender o borrar.
+- `guests/{guestId}`: el RRPP solo puede operar sobre invitados cuyo `addedBy` coincida con su UID.
+- `enlista/global_state`: permanece temporalmente abierto por compatibilidad con los datos heredados. Debe migrarse antes de cerrar completamente el modelo legado.
 
-1. Ir a **Admin → Promotores → Nuevo promotor**.
-2. Completar nombre, email, contraseña inicial y teléfono opcional.
-3. La app llama a la Cloud Function `createPromoter`.
-4. La Function crea el usuario en Firebase Authentication y el perfil en `promoters/{uid}`.
+## Despliegue
 
-El RRPP entra con su propio email y contraseña desde la pantalla inicial. No se debe usar el selector demo ni compartir una cuenta.
+El workflow de GitHub Actions publica únicamente:
 
-## Estado de seguridad
+```text
+Firebase Hosting
+Firestore Rules
+```
 
-Las reglas nuevas protegen:
-
-- `users/{uid}`: perfil propio o Admin.
-- `promoters/{uid}`: lectura del propio RRPP; escritura solo Admin.
-- `guests/{guestId}`: el RRPP solo puede leer, crear, modificar o eliminar invitados cuyo `addedBy` sea su UID; Admin puede administrar todos.
-
-`enlista/global_state` todavía se conserva abierto por compatibilidad con la aplicación heredada, que almacena allí eventos, invitados y links. Debe migrarse a colecciones individuales antes de cerrar esa regla; mientras permanezca abierta, no debe considerarse una protección completa para el estado legado.
+No despliega Cloud Functions, Cloud Build ni Artifact Registry. Por eso este flujo no requiere habilitar esos servicios para crear cuentas RRPP.

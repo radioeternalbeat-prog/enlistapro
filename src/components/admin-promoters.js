@@ -5,24 +5,35 @@
 
 import store from '../lib/store.js';
 import { showModal, closeModal, showToast, generateId, getInitials, generateQRValue } from '../lib/utils.js';
-import { authErrorMessage, createPromoterAccount, managePromoterAccount } from '../lib/auth.js';
+import { authErrorMessage, listPromoters, updatePromoterApproval } from '../lib/auth.js';
 
 function escapeHtml(value = '') {
   return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 }
 
 export function renderAdminPromoters(container, selectedPromoterId = store.get('adminSelectedPromoterId') || '') {
-  const promoters = store.getPromoters();
+  listPromoters().then(promoters => {
+    const merged = [...store.get('users').filter(user => user.role !== 'rrpp'), ...promoters];
+    store.set('users', merged);
+    renderAdminPromotersView(container, selectedPromoterId, promoters);
+  }).catch(error => {
+    console.warn('No se pudieron cargar solicitudes RRPP:', error);
+    renderAdminPromotersView(container, selectedPromoterId, store.getPromoters());
+  });
+}
+
+function renderAdminPromotersView(container, selectedPromoterId, promoters = store.getPromoters()) {
   const events = store.get('events');
   const openEvents = events.filter(event => event.status !== 'closed');
   const activePromotersList = promoters.filter(promoter => promoter.active !== false);
   const activePromoters = activePromotersList.length;
   const selectedPromoter = activePromotersList.find(promoter => promoter.id === selectedPromoterId);
+  const pendingPromoters = promoters.filter(promoter => promoter.status === 'pending');
 
   container.innerHTML = `
     <div class="page-header">
       <div><h1 class="page-title">Promotores</h1><p class="page-subtitle">Administrá tu equipo de RRPP y sus listas.</p></div>
-      <button class="btn btn-primary" id="add-promoter-btn" type="button">✚ Nuevo promotor</button>
+      <button class="btn btn-primary" id="refresh-promoters-btn" type="button">↻ Actualizar solicitudes</button>
     </div>
 
     <div class="stats-grid stagger">
@@ -30,6 +41,8 @@ export function renderAdminPromoters(container, selectedPromoterId = store.get('
       <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value">${promoters.length}</div><div class="stat-label">Perfiles registrados</div></div>
       <div class="stat-card stat-warning"><div class="stat-icon">⏸</div><div class="stat-value">${promoters.length - activePromoters}</div><div class="stat-label">Desactivados</div></div>
     </div>
+
+    ${pendingPromoters.length ? `<div class="card pending-requests-card animate-in"><div class="card-header"><div><h3>Solicitudes pendientes</h3><p class="text-sm text-secondary">Revisá y aprobá las cuentas RRPP que solicitaron acceso.</p></div><span class="badge badge-warning">${pendingPromoters.length} pendiente${pendingPromoters.length === 1 ? '' : 's'}</span></div><div class="card-body pending-requests-list">${pendingPromoters.map(pendingPromoterCard).join('')}</div></div>` : ''}
 
     <div class="card admin-list-builder animate-in">
       <div class="card-header"><div><h3>Crear lista de invitados</h3><p class="text-sm text-secondary">Elegí el promotor responsable antes de cargar cada invitado.</p></div><span class="badge badge-primary">Atribución manual</span></div>
@@ -50,7 +63,7 @@ export function renderAdminPromoters(container, selectedPromoterId = store.get('
     ${promoters.length === 0 ? `<div class="empty-state"><div class="empty-icon">🎤</div><h4>Sin promotores</h4><p>Agregá el primer RRPP para que pueda gestionar sus listas.</p></div>` : ''}
   `;
 
-  document.getElementById('add-promoter-btn')?.addEventListener('click', () => openCreatePromoterModal(container));
+  document.getElementById('refresh-promoters-btn')?.addEventListener('click', () => renderAdminPromoters(container, selectedPromoterId));
   document.getElementById('admin-promoter-select')?.addEventListener('change', (event) => {
     store.set('adminSelectedPromoterId', event.target.value);
     renderAdminPromoters(container, event.target.value);
@@ -58,6 +71,30 @@ export function renderAdminPromoters(container, selectedPromoterId = store.get('
   document.getElementById('admin-add-guest-form')?.addEventListener('submit', event => addAdminGuest(event, container, selectedPromoterId));
   container.querySelectorAll('[data-promoter-action="toggle"]').forEach(button => button.addEventListener('click', () => togglePromoter(button.dataset.promoterId, container)));
   container.querySelectorAll('[data-promoter-action="delete"]').forEach(button => button.addEventListener('click', () => deletePromoter(button.dataset.promoterId, container)));
+  container.querySelectorAll('[data-request-action="approve"]').forEach(button => button.addEventListener('click', () => reviewPromoter(button.dataset.promoterId, 'approved', container)));
+  container.querySelectorAll('[data-request-action="reject"]').forEach(button => button.addEventListener('click', () => reviewPromoter(button.dataset.promoterId, 'rejected', container)));
+}
+
+function pendingPromoterCard(promoter) {
+  const name = escapeHtml(promoter.displayName || 'Sin nombre');
+  const email = escapeHtml(promoter.email || 'Sin email');
+  const uid = escapeHtml(promoter.uid || promoter.id);
+  return `<article class="pending-request-row"><div class="user-avatar">${escapeHtml(getInitials(promoter.displayName || '?'))}</div><div class="pending-request-info"><strong>${name}</strong><span>${email}</span>${promoter.phone ? `<small>${escapeHtml(promoter.phone)}</small>` : ''}</div><div class="pending-request-actions"><button class="btn btn-success btn-sm" type="button" data-request-action="approve" data-promoter-id="${uid}">Aprobar</button><button class="btn btn-danger btn-sm" type="button" data-request-action="reject" data-promoter-id="${uid}">Rechazar</button></div></article>`;
+}
+
+async function reviewPromoter(promoterId, status, container) {
+  const promoter = store.get('users').find(user => (user.uid || user.id) === promoterId);
+  if (!promoter) return;
+  const action = status === 'approved' ? 'aprobar' : 'rechazar';
+  if (!window.confirm(`¿Querés ${action} la solicitud de ${promoter.displayName}?`)) return;
+  try {
+    await updatePromoterApproval(promoterId, status);
+    store.updateUser(promoterId, { status, active: status === 'approved' });
+    showToast(status === 'approved' ? 'Cuenta RRPP aprobada' : 'Solicitud RRPP rechazada', 'success');
+    renderAdminPromoters(container);
+  } catch (error) {
+    showToast(authErrorMessage(error), 'error');
+  }
 }
 
 function addAdminGuest(event, container, promoterId) {
@@ -109,40 +146,15 @@ function promoterCard(promoter) {
     </div></article>`;
 }
 
-function openCreatePromoterModal(container) {
-  showModal('Nuevo promotor', `<form id="create-promoter-form"><div class="form-group"><label for="promoter-name">Nombre completo</label><input type="text" class="form-input" id="promoter-name" placeholder="Nombre y apellido" autocomplete="name" required /></div><div class="form-group"><label for="promoter-email">Email</label><input type="email" class="form-input" id="promoter-email" placeholder="email@ejemplo.com" autocomplete="email" required /></div><div class="form-group"><label for="promoter-password">Contraseña inicial</label><input type="password" class="form-input" id="promoter-password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" minlength="6" required /></div><div class="form-group"><label for="promoter-phone">Teléfono <span class="text-secondary">(opcional)</span></label><input type="tel" class="form-input" id="promoter-phone" placeholder="+54 11 ..." autocomplete="tel" /></div><div class="promoter-form-note">La cuenta se creará en Firebase Authentication. Compartí la contraseña inicial con el RRPP de forma segura.</div><div class="flex gap-12 mt-24"><button type="button" class="btn btn-ghost flex-1" id="cancel-promoter-btn">Cancelar</button><button type="submit" class="btn btn-primary flex-1" id="create-promoter-submit">Crear promotor</button></div></form>`);
-  document.getElementById('cancel-promoter-btn')?.addEventListener('click', closeModal);
-  document.getElementById('create-promoter-form')?.addEventListener('submit', async event => {
-    event.preventDefault();
-    const displayName = document.getElementById('promoter-name').value.trim();
-    const email = document.getElementById('promoter-email').value.trim().toLowerCase();
-    const password = document.getElementById('promoter-password').value;
-    const phone = document.getElementById('promoter-phone').value.trim();
-    if (store.get('users').some(user => user.email?.toLowerCase() === email)) { showToast('Ya existe un usuario con ese email', 'error'); return; }
-    const submit = document.getElementById('create-promoter-submit');
-    submit.disabled = true;
-    submit.textContent = 'Creando cuenta...';
-    try {
-      const profile = await createPromoterAccount({ name: displayName, email, password, phone });
-      store.addUser(profile);
-      closeModal(); showToast('Promotor creado y activado', 'success'); renderAdminPromoters(container);
-    } catch (error) {
-      showToast(authErrorMessage(error), 'error');
-      submit.disabled = false;
-      submit.textContent = 'Crear promotor';
-    }
-  });
-}
-
 async function togglePromoter(promoterId, container) {
   const promoter = store.get('users').find(user => user.id === promoterId);
   if (!promoter) return;
   if (promoter.active !== false) {
     if (!window.confirm(`¿Desactivar a ${promoter.displayName}? Ya no podrá ingresar, pero se conservarán sus listas e historial.`)) return;
-    try { await managePromoterAccount(promoterId, 'deactivate'); store.deactivateUser(promoterId); showToast('Promotor desactivado', 'success'); }
+    try { await updatePromoterApproval(promoterId, 'suspended'); store.deactivateUser(promoterId); showToast('Promotor desactivado', 'success'); }
     catch (error) { showToast(authErrorMessage(error), 'error'); }
   } else {
-    try { await managePromoterAccount(promoterId, 'reactivate'); store.reactivateUser(promoterId); showToast('Promotor reactivado', 'success'); }
+    try { await updatePromoterApproval(promoterId, 'approved'); store.reactivateUser(promoterId); showToast('Promotor reactivado', 'success'); }
     catch (error) { showToast(authErrorMessage(error), 'error'); }
   }
   renderAdminPromoters(container);
@@ -152,6 +164,6 @@ async function deletePromoter(promoterId, container) {
   const promoter = store.get('users').find(user => user.id === promoterId);
   if (!promoter || promoter.active !== false) return;
   if (!window.confirm(`¿Eliminar permanentemente a ${promoter.displayName}? Se quitará el perfil, pero sus invitados e historial se conservarán.`)) return;
-  try { await managePromoterAccount(promoterId, 'delete'); store.removeUser(promoterId); showToast('Promotor eliminado', 'success'); renderAdminPromoters(container); }
+  try { await updatePromoterApproval(promoterId, 'rejected'); store.updateUser(promoterId, { status: 'rejected', active: false }); showToast('Promotor archivado', 'success'); renderAdminPromoters(container); }
   catch (error) { showToast(authErrorMessage(error), 'error'); }
 }

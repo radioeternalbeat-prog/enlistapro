@@ -5,8 +5,8 @@
 
 import store from '../lib/store.js';
 import router from '../lib/router.js';
-import { showToast } from '../lib/utils.js';
-import { authErrorMessage, signIn } from '../lib/auth.js';
+import { showModal, closeModal, showToast } from '../lib/utils.js';
+import { authErrorMessage, registerPromoterRequest, signIn } from '../lib/auth.js';
 
 let selectedRole = null;
 
@@ -23,7 +23,7 @@ export function renderLogin(container) {
           <div class="form-group"><label for="login-password">Contraseña</label><input type="password" class="form-input" id="login-password" placeholder="••••••••" autocomplete="current-password" minlength="6" required /></div>
           <button type="submit" class="btn btn-primary btn-block btn-lg mt-16" id="login-btn">Ingresar</button>
         </form>
-        <div class="mt-24 text-center"><p class="text-sm text-secondary">¿Primera vez?</p><button class="btn btn-ghost btn-sm mt-8" id="go-signup-btn" type="button">Crear cuenta de Admin</button></div>
+        <div class="mt-24 text-center"><p class="text-sm text-secondary">¿Primera vez?</p><button class="btn btn-ghost btn-sm mt-8" id="go-signup-btn" type="button">Crear cuenta de Admin</button><button class="btn btn-ghost btn-sm mt-8" id="request-rrpp-btn" type="button">Solicitar cuenta RRPP</button></div>
         <div class="mt-24 text-center"><p class="text-sm text-secondary">Seleccioná un rol para ingresar:</p><div class="flex gap-8 mt-8" style="flex-wrap: wrap; justify-content: center;"><button class="btn btn-ghost btn-sm role-select-btn" data-role="admin" type="button">👑 Admin</button><button class="btn btn-ghost btn-sm role-select-btn" data-role="rrpp" type="button">🎤 RRPP</button><button class="btn btn-ghost btn-sm role-select-btn" data-role="puerta" type="button">🚪 Puerta</button></div></div>
       </div>
       <p class="text-sm text-secondary" style="position:relative; z-index:1; margin-top: 32px;">v1.0 MVP — Powered by Firebase</p>
@@ -35,6 +35,7 @@ export function renderLogin(container) {
   });
 
   document.getElementById('go-signup-btn')?.addEventListener('click', () => router.navigate('signup'));
+  document.getElementById('request-rrpp-btn')?.addEventListener('click', openPromoterRequestModal);
   document.getElementById('login-form')?.addEventListener('submit', handleLogin);
 }
 
@@ -63,6 +64,26 @@ async function handleLogin(event) {
     button.disabled = false;
     button.textContent = 'Ingresar';
   }
+}
+
+function openPromoterRequestModal() {
+  showModal('Solicitar cuenta RRPP', `<form id="promoter-request-form"><p class="text-sm text-secondary">Creá tus credenciales. Un administrador revisará tu solicitud antes de habilitar el acceso.</p><div class="form-group"><label for="request-name">Nombre completo</label><input class="form-input" id="request-name" autocomplete="name" required /></div><div class="form-group"><label for="request-email">Email</label><input type="email" class="form-input" id="request-email" autocomplete="email" required /></div><div class="form-group"><label for="request-password">Contraseña</label><input type="password" class="form-input" id="request-password" minlength="6" autocomplete="new-password" required /></div><div class="form-group"><label for="request-phone">Teléfono <span class="text-secondary">(opcional)</span></label><input class="form-input" id="request-phone" autocomplete="tel" /></div><div class="flex gap-12 mt-24"><button type="button" class="btn btn-ghost flex-1" id="cancel-request-btn">Cancelar</button><button type="submit" class="btn btn-primary flex-1" id="submit-request-btn">Enviar solicitud</button></div></form>`);
+  document.getElementById('cancel-request-btn')?.addEventListener('click', closeModal);
+  document.getElementById('promoter-request-form')?.addEventListener('submit', async event => {
+    event.preventDefault();
+    const button = document.getElementById('submit-request-btn');
+    button.disabled = true;
+    button.textContent = 'Enviando...';
+    try {
+      await registerPromoterRequest({ name: document.getElementById('request-name').value, email: document.getElementById('request-email').value, password: document.getElementById('request-password').value, phone: document.getElementById('request-phone').value });
+      closeModal();
+      showToast('Solicitud enviada. Esperá la aprobación del administrador.', 'success');
+    } catch (error) {
+      showToast(authErrorMessage(error), 'error');
+      button.disabled = false;
+      button.textContent = 'Enviar solicitud';
+    }
+  });
 }
 
 function navigateByRole(role) {
