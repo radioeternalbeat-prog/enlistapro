@@ -145,7 +145,7 @@ function renderShareLink(container, user) {
 
 async function showQRModal(guest) {
   const qrValue = guest.qrCode || generateQRValue(guest.id);
-  showModal('Codigo QR', `<div class="qr-container" id="qr-render"><div class="spinner"></div></div><div class="qr-guest-name">${guest.firstName} ${guest.lastName}</div><div class="qr-guest-meta">${guest.listType}${guest.plusOnes > 0 ? ` · +${guest.plusOnes} acomp.` : ''}</div><p class="text-sm text-secondary text-center mt-8">${qrValue}</p>`);
+  showModal('Codigo QR', `<div class="qr-container" id="qr-render"><div class="spinner"></div></div><div class="qr-guest-name">${guest.firstName} ${guest.lastName}</div><div class="qr-guest-meta">${guest.listType}${guest.plusOnes > 0 ? ` · +${guest.plusOnes} acomp.` : ''}</div><p class="text-sm text-secondary text-center mt-8">${qrValue}</p><button type="button" class="btn btn-success btn-block mt-16" id="download-guest-qr-btn">📥 Descargar QR</button>`);
   setTimeout(async () => {
     const qrContainer = document.getElementById('qr-render');
     if (qrContainer) {
@@ -154,6 +154,23 @@ async function showQRModal(guest) {
       await QRCode.toCanvas(canvas, qrValue, { width: 200, color: { dark: '#000000', light: '#ffffff' }, margin: 2 });
       canvas.style.borderRadius = '12px';
       qrContainer.appendChild(canvas);
+
+      document.getElementById('download-guest-qr-btn')?.addEventListener('click', async () => {
+        try {
+          const qrDataUrl = await QRCode.toDataURL(qrValue, { width: 400, margin: 2, color: { dark: '#000000', light: '#FFFFFF' } });
+          const safeName = `${guest.firstName || 'invitado'}_${guest.lastName || ''}`.trim().replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ_-]/g, '_');
+          const link = document.createElement('a');
+          link.href = qrDataUrl;
+          link.download = `ENLISTA_QR_${safeName}.png`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          showToast('✅ QR descargado exitosamente', 'success');
+        } catch (error) {
+          console.error('Error downloading guest QR:', error);
+          showToast('Error al descargar. Intenta con una captura de pantalla.', 'error');
+        }
+      });
     }
   }, 100);
 }
