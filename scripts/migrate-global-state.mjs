@@ -15,8 +15,12 @@ function initAdmin() {
   if (getApps().length) return getFirestore();
   const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   if (serviceAccount) {
+    const parsedServiceAccount = JSON.parse(serviceAccount);
+    if (parsedServiceAccount.private_key) {
+      parsedServiceAccount.private_key = parsedServiceAccount.private_key.replace(/\\n/g, '\n');
+    }
     return getFirestore(initializeApp({
-      credential: cert(JSON.parse(serviceAccount)),
+      credential: cert(parsedServiceAccount),
       projectId: PROJECT_ID,
     }));
   }
