@@ -1,4 +1,4 @@
-name: Migrate Firestore global state
+name: Migrate Firestore guests
 
 on:
   workflow_dispatch:
@@ -17,31 +17,25 @@ permissions:
 
 jobs:
   migrate:
-    name: Migrate Firestore data
+    name: Backup and migrate guests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Install migration dependencies
-        working-directory: functions
-        run: npm install --no-audit --no-fund
-
-      - name: Write service account file
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Backup, migrate and verify guests
         env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_PROJECT_ID: en-lista-app-z1e6wt
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
-          test -n "$FIREBASE_SERVICE_ACCOUNT"
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-service-account.json"
-          chmod 600 "$RUNNER_TEMP/firebase-service-account.json"
-
-      - name: Run migration
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
-          GCLOUD_PROJECT: en-lista-app-z1e6wt
-        run: node scripts/migrate-global-state.cjs ${{ inputs.mode == 'apply' && '--apply' || '' }}
+          if [ "${{ inputs.mode }}" = "apply" ]; then
+            npm run migrate:apply
+          else
+            npm run migrate:dry-run
+          fi
