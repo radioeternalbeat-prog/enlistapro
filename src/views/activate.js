@@ -9,7 +9,7 @@ export function renderActivate(container) {
   container.innerHTML = `
     <div class="login-screen">
       <div class="login-logo fade-in-up" style="animation-duration: 0.6s">
-        <img src="https://i.postimg.cc/85znbhR5/en-lista-logo.png" alt="EN LISTA Logo" class="logo-icon-img" />
+        <img src="/icon-512.png" alt="EN LISTA Logo" class="logo-icon-img" />
         <h1>EN LISTA<span style="color:var(--accent-primary)">!</span></h1>
         <p>Activacion de Licencia</p>
       </div>

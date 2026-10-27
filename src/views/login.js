@@ -6,7 +6,7 @@
 import store from '../lib/store.js';
 import router from '../lib/router.js';
 import { showModal, closeModal, showToast } from '../lib/utils.js';
-import { authErrorMessage, registerPromoterRequest, signIn } from '../lib/auth.js';
+import { authErrorMessage, registerPromoterRequest, resetPassword, signIn } from '../lib/auth.js';
 
 let selectedRole = null;
 
@@ -23,6 +23,7 @@ export function renderLogin(container) {
           <div class="form-group"><label for="login-password">Contraseña</label><input type="password" class="form-input" id="login-password" placeholder="••••••••" autocomplete="current-password" minlength="6" required /></div>
           <button type="submit" class="btn btn-primary btn-block btn-lg mt-16" id="login-btn">Ingresar</button>
         </form>
+        <button type="button" class="btn btn-ghost btn-sm mt-16" id="forgot-password-btn">¿Olvidaste tu contraseña?</button>
         <div class="mt-24 text-center"><p class="text-sm text-secondary">¿Primera vez?</p><button class="btn btn-ghost btn-sm mt-8" id="go-signup-btn" type="button">Crear cuenta de Admin</button><button class="btn btn-ghost btn-sm mt-8" id="request-rrpp-btn" type="button">Solicitar cuenta RRPP</button></div>
         <div class="mt-24 text-center"><p class="text-sm text-secondary">Seleccioná un rol para ingresar:</p><div class="flex gap-8 mt-8" style="flex-wrap: wrap; justify-content: center;"><button class="btn btn-ghost btn-sm role-select-btn" data-role="admin" type="button">👑 Admin</button><button class="btn btn-ghost btn-sm role-select-btn" data-role="rrpp" type="button">🎤 RRPP</button><button class="btn btn-ghost btn-sm role-select-btn" data-role="puerta" type="button">🚪 Puerta</button></div></div>
       </div>
@@ -36,6 +37,7 @@ export function renderLogin(container) {
 
   document.getElementById('go-signup-btn')?.addEventListener('click', () => router.navigate('signup'));
   document.getElementById('request-rrpp-btn')?.addEventListener('click', openPromoterRequestModal);
+  document.getElementById('forgot-password-btn')?.addEventListener('click', openPasswordResetModal);
   document.getElementById('login-form')?.addEventListener('submit', handleLogin);
 }
 
@@ -64,6 +66,26 @@ async function handleLogin(event) {
     button.disabled = false;
     button.textContent = 'Ingresar';
   }
+}
+
+function openPasswordResetModal() {
+  showModal('Restablecer contraseña', `<form id="password-reset-form"><p class="text-sm text-secondary">Te enviaremos un enlace para crear una contraseña nueva.</p><div class="form-group mt-16"><label for="reset-email">Email</label><input type="email" class="form-input" id="reset-email" placeholder="tu@email.com" autocomplete="email" required /></div><div class="flex gap-12 mt-24"><button type="button" class="btn btn-ghost flex-1" id="cancel-reset-btn">Cancelar</button><button type="submit" class="btn btn-primary flex-1" id="submit-reset-btn">Enviar enlace</button></div></form>`);
+  document.getElementById('cancel-reset-btn')?.addEventListener('click', closeModal);
+  document.getElementById('password-reset-form')?.addEventListener('submit', async event => {
+    event.preventDefault();
+    const button = document.getElementById('submit-reset-btn');
+    button.disabled = true;
+    button.textContent = 'Enviando...';
+    try {
+      await resetPassword(document.getElementById('reset-email').value);
+      closeModal();
+      showToast('Revisá tu correo para restablecer la contraseña.', 'success', 5000);
+    } catch (error) {
+      showToast(authErrorMessage(error), 'error');
+      button.disabled = false;
+      button.textContent = 'Enviar enlace';
+    }
+  });
 }
 
 function openPromoterRequestModal() {
