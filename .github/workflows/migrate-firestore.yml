@@ -1,0 +1,27 @@
+name: Migrate Firestore guests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: Backup and migrate guests
+    runs-on: ubuntu-latest
+    env:
+      FIREBASE_PROJECT_ID: en-lista-app-z1e6wt
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Backup, migrate and verify guests
+        run: npm run migrate

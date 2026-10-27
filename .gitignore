@@ -26,3 +26,6 @@ npm-debug.log*
 
 # Firebase
 .firebase/
+
+# Local Firestore backups may contain personal guest data
+backups/*.json
