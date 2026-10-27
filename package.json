@@ -12,6 +12,7 @@
     "migrate": "node scripts/migrate-global-state.mjs"
   },
   "devDependencies": {
+    "@google-cloud/firestore": "^9.4.0",
     "firebase-admin": "^14.5.0",
     "vite": "^7.3.1"
   },
