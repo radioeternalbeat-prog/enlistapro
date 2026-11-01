@@ -1,5 +1,5 @@
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
-import { collection, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from './firebase.js';
 
 export async function signIn(email, password) {
@@ -49,6 +49,8 @@ export async function registerPromoterRequest({ name, email, password, phone = '
 export async function getUserProfile(uid) {
   const promoter = await getDoc(doc(db, 'promoters', uid));
   if (promoter.exists()) return promoter.data();
+  const staff = await getDoc(doc(db, 'staff', uid));
+  if (staff.exists()) return staff.data();
   const user = await getDoc(doc(db, 'users', uid));
   return user.exists() ? user.data() : null;
 }
@@ -61,6 +63,37 @@ export async function listPromoters() {
 export async function updatePromoterApproval(uid, status) {
   if (!['approved', 'rejected', 'suspended'].includes(status)) throw new Error('INVALID_STATUS');
   await updateDoc(doc(db, 'promoters', uid), { status, active: status === 'approved', reviewedAt: new Date().toISOString() });
+}
+
+export async function registerGateRequest({ name, email, password, phone = '' }) {
+  const credential = await createUserWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
+  const profile = { uid: credential.user.uid, id: credential.user.uid, displayName: name.trim(), email: credential.user.email, phone: phone.trim(), role: 'puerta', status: 'pending', active: false, createdAt: new Date().toISOString() };
+  try {
+    await setDoc(doc(db, 'staff', credential.user.uid), profile);
+    await signOut(auth);
+    return profile;
+  } catch (error) {
+    await signOut(auth);
+    throw error;
+  }
+}
+
+export async function listGateAccounts() {
+  const snapshot = await getDocs(collection(db, 'staff'));
+  return snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
+}
+
+export async function updateGateAccess(uid, status) {
+  if (!['approved', 'rejected', 'suspended'].includes(status)) throw new Error('INVALID_STATUS');
+  await updateDoc(doc(db, 'staff', uid), { status, active: status === 'approved', reviewedAt: new Date().toISOString() });
+}
+
+export async function deletePromoterProfile(uid) {
+  await deleteDoc(doc(db, 'promoters', uid));
+}
+
+export async function deleteGateProfile(uid) {
+  await deleteDoc(doc(db, 'staff', uid));
 }
 
 export async function logout() { await signOut(auth); }

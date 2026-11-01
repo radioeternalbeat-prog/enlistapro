@@ -505,6 +505,15 @@ a { color: var(--accent-primary); text-decoration: none; }
 .admin-guest-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 620px) { .admin-list-builder .card-header { flex-direction: column; }.admin-guest-fields { grid-template-columns: 1fr; } }
 
+.admin-account-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }
+.account-management-card .card-header { align-items: flex-start; }
+.account-row { display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border-color); }
+.account-row:last-child { border-bottom: 0; }
+.account-row > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.account-row strong, .account-row span:not(.badge) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-row span:not(.badge) { color: var(--text-secondary); font-size: .78rem; }
+@media (max-width: 900px) { .admin-account-grid { grid-template-columns: 1fr; } }
+
 /* --- Initial RRPP selector --- */
 .promoter-selector-intro { margin-bottom: 16px; line-height: 1.45; }
 .promoter-selector-list { display: grid; gap: 10px; max-height: 330px; overflow-y: auto; }

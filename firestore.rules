@@ -39,6 +39,17 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // Personal de Puerta: puede solicitar acceso; solo Admin puede habilitarlo.
+    match /staff/{uid} {
+      allow create: if isOwner(uid)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.role == 'puerta'
+        && request.resource.data.status == 'pending'
+        && request.resource.data.active == false;
+      allow read: if isOwner(uid) || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
     match /guests/{guestId} {
       allow read: if isAdmin() || (signedIn() && resource.data.addedBy == request.auth.uid);
       allow create: if isAdmin() || (signedIn() && request.resource.data.addedBy == request.auth.uid);

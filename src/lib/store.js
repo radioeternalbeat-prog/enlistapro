@@ -5,60 +5,17 @@
 
 const STORAGE_KEY = 'enlista_state';
 
-// Default demo data for MVP without Firebase connection
+// Estado inicial real: una instalación nueva comienza sin eventos ni usuarios ficticios.
 const defaultState = {
   currentUser: null,
   currentView: 'login',
   currentEvent: null,
-  events: [
-    {
-      id: 'evt_demo_001',
-      name: 'Noche Electronica',
-      venue: 'Club Zenith',
-      date: new Date().toISOString(),
-      maxCapacity: 500,
-      currentCount: 0,
-      status: 'active',
-      createdBy: 'admin_001',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'evt_demo_002',
-      name: 'Reggaeton Night',
-      venue: 'Disco Palermo',
-      date: new Date(Date.now() + 86400000).toISOString(),
-      maxCapacity: 300,
-      currentCount: 0,
-      status: 'upcoming',
-      createdBy: 'admin_001',
-      createdAt: new Date().toISOString(),
-    }
-  ],
-  guests: {},  // eventId -> guest[]
-  users: [
-    { id: 'admin_001', email: 'admin@enlista.app', displayName: 'Admin Principal', role: 'admin', active: true },
-    { id: 'rrpp_001', email: 'carlos@enlista.app', displayName: 'Carlos Promotor', role: 'rrpp', active: true },
-    { id: 'rrpp_002', email: 'maria@enlista.app', displayName: 'Maria Lopez', role: 'rrpp', active: true },
-    { id: 'puerta_001', email: 'puerta@enlista.app', displayName: 'Staff Puerta 1', role: 'puerta', active: true },
-  ],
+  events: [],
+  guests: {},
+  users: [],
   registrationLinks: {},
   sidebarSection: 'dashboard',
 };
-
-// Initialize demo guests
-defaultState.guests['evt_demo_001'] = [
-  { id: 'g001', firstName: 'Lucia', lastName: 'Fernandez', phone: '+54 11 5555-1001', status: 'pending', listType: 'VIP', plusOnes: 2, addedBy: 'rrpp_001', promoterName: 'Carlos Promotor', qrCode: 'ENLISTA-g001', selfRegistered: false, registeredAt: new Date().toISOString(), notes: '' },
-  { id: 'g002', firstName: 'Martin', lastName: 'Garcia', phone: '+54 11 5555-1002', status: 'pending', listType: 'general', plusOnes: 1, addedBy: 'rrpp_001', promoterName: 'Carlos Promotor', qrCode: 'ENLISTA-g002', selfRegistered: false, registeredAt: new Date().toISOString(), notes: '' },
-  { id: 'g003', firstName: 'Valentina', lastName: 'Rodriguez', phone: '+54 11 5555-1003', status: 'checked-in', listType: 'VIP', plusOnes: 0, addedBy: 'rrpp_002', promoterName: 'Maria Lopez', qrCode: 'ENLISTA-g003', selfRegistered: false, registeredAt: new Date().toISOString(), checkedInAt: new Date().toISOString(), checkedInBy: 'puerta_001', notes: 'Cumpleanera' },
-  { id: 'g004', firstName: 'Santiago', lastName: 'Martinez', phone: '+54 11 5555-1004', status: 'pending', listType: 'general', plusOnes: 3, addedBy: 'rrpp_002', promoterName: 'Maria Lopez', qrCode: 'ENLISTA-g004', selfRegistered: false, registeredAt: new Date().toISOString(), notes: '' },
-  { id: 'g005', firstName: 'Camila', lastName: 'Lopez', phone: '+54 11 5555-1005', status: 'checked-in', listType: 'VIP', plusOnes: 1, addedBy: 'rrpp_001', promoterName: 'Carlos Promotor', qrCode: 'ENLISTA-g005', selfRegistered: false, registeredAt: new Date().toISOString(), checkedInAt: new Date().toISOString(), checkedInBy: 'puerta_001', notes: '' },
-  { id: 'g006', firstName: 'Tomas', lastName: 'Alvarez', phone: '+54 11 5555-1006', status: 'pending', listType: 'general', plusOnes: 0, addedBy: 'rrpp_001', promoterName: 'Carlos Promotor', qrCode: 'ENLISTA-g006', selfRegistered: true, registeredAt: new Date().toISOString(), notes: '' },
-  { id: 'g007', firstName: 'Isabella', lastName: 'Sanchez', phone: '+54 11 5555-1007', status: 'pending', listType: 'VIP', plusOnes: 2, addedBy: 'rrpp_002', promoterName: 'Maria Lopez', qrCode: 'ENLISTA-g007', selfRegistered: false, registeredAt: new Date().toISOString(), notes: 'Mesa reservada' },
-  { id: 'g008', firstName: 'Benjamin', lastName: 'Torres', phone: '+54 11 5555-1008', status: 'pending', listType: 'backstage', plusOnes: 0, addedBy: 'rrpp_001', promoterName: 'Carlos Promotor', qrCode: 'ENLISTA-g008', selfRegistered: false, registeredAt: new Date().toISOString(), notes: 'DJ invitado' },
-];
-
-// Set currentCount based on checked-in guests
-defaultState.events[0].currentCount = defaultState.guests['evt_demo_001'].filter(g => g.status === 'checked-in').length;
 
 import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase.js';
@@ -74,7 +31,8 @@ class Store {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        return { ...defaultState, ...JSON.parse(saved) };
+        const savedState = JSON.parse(saved);
+        return this.sanitizeState({ ...defaultState, ...savedState });
       }
     } catch (e) {
       console.warn('Failed to load state from localStorage:', e);
@@ -82,23 +40,40 @@ class Store {
     return { ...defaultState };
   }
 
+  sanitizeState(state) {
+    const demoUserIds = new Set(['admin_001', 'rrpp_001', 'rrpp_002', 'puerta_001']);
+    const events = (state.events || []).filter(event => !String(event.id).startsWith('evt_demo_'));
+    const users = (state.users || []).filter(user => !demoUserIds.has(user.id));
+    const guests = Object.fromEntries(Object.entries(state.guests || {}).filter(([eventId]) => !String(eventId).startsWith('evt_demo_')));
+    const currentUser = state.currentUser && demoUserIds.has(state.currentUser.id) ? null : state.currentUser;
+    return { ...state, events, users, guests, currentUser };
+  }
+
   async init() {
     return new Promise((resolve) => {
       const stateDoc = doc(db, 'enlista', 'global_state');
       
       onSnapshot(stateDoc, (snapshot) => {
+        this.initialized = true;
         if (snapshot.exists()) {
           const data = snapshot.data();
           // We keep device-specific states like currentView/User local
-          this.state = {
+          const remoteState = {
             ...this.state,
-            events: data.events || this.state.events,
+            events: Array.isArray(data.events) && data.events.length > 0 ? data.events : this.state.events,
             guests: data.guests || this.state.guests,
             users: data.users || this.state.users,
             registrationLinks: data.registrationLinks || this.state.registrationLinks
           };
+          // Nunca reintroducir datos de demostración desde un snapshot o almacenamiento local.
+          const sanitizedState = this.sanitizeState(remoteState);
+          const hadDemoData = JSON.stringify(remoteState.users) !== JSON.stringify(sanitizedState.users)
+            || JSON.stringify(remoteState.guests) !== JSON.stringify(sanitizedState.guests)
+            || JSON.stringify(remoteState.events) !== JSON.stringify(sanitizedState.events);
+          this.state = sanitizedState;
+          if (hadDemoData) this.saveState();
         } else {
-          // If document doesn't exist, create it with our demo data
+          // Si aún no existe, crear únicamente el estado real disponible en el dispositivo.
           setDoc(stateDoc, {
             events: this.state.events,
             guests: this.state.guests,
@@ -107,8 +82,6 @@ class Store {
           }, { merge: true }).catch(console.warn);
         }
 
-        this.initialized = true;
-        
         // Trigger UI updates
         this.notify('*', this.state);
         this.notify('events', this.state.events);
@@ -294,17 +267,14 @@ class Store {
       if (g.status === 'checked-in') byPromoter[g.promoterName].checkedIn++;
     });
 
-    // Arrival curve (mock by hour)
+    // Curva de llegada basada únicamente en check-ins reales.
     const arrivalCurve = [];
     const checkedInGuests = guests.filter(g => g.status === 'checked-in' && g.checkedInAt);
-    // Generate mock arrival data for visualization
     const hours = ['22:00', '23:00', '00:00', '01:00', '02:00', '03:00', '04:00'];
-    hours.forEach((hour, i) => {
-      arrivalCurve.push({
-        hour,
-        count: Math.max(0, Math.round(checkedIn * (Math.sin((i + 1) / hours.length * Math.PI) * 0.4 + Math.random() * 0.2)))
-      });
-    });
+    hours.forEach(hour => arrivalCurve.push({ hour, count: checkedInGuests.filter(guest => {
+      const date = new Date(guest.checkedInAt);
+      return date.toString() !== 'Invalid Date' && String(date.getHours()).padStart(2, '0') === hour.slice(0, 2);
+    }).length }));
 
     return {
       total,

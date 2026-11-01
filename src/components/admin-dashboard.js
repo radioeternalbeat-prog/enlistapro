@@ -3,7 +3,8 @@
 // ============================================
 
 import store from '../lib/store.js';
-import { formatDate, getCapacityLevel, animateCounter } from '../lib/utils.js';
+import { formatDate, getCapacityLevel, animateCounter, showToast } from '../lib/utils.js';
+import { authErrorMessage, deleteGateProfile, deletePromoterProfile, listGateAccounts, listPromoters, updateGateAccess, updatePromoterApproval } from '../lib/auth.js';
 
 export function renderAdminDashboard(container) {
   const events = store.get('events');
@@ -19,11 +20,63 @@ export function renderAdminDashboard(container) {
         </select>
       </div>
     </div>
-    ${activeEvent ? renderEventDashboard(activeEvent, metrics) : `<div class="empty-state"><div class="empty-icon">📅</div><h4>No hay eventos</h4><p>Crea tu primer evento para ver las metricas</p></div>`}
+    ${activeEvent ? renderEventDashboard(activeEvent, metrics) : `<div class="empty-state"><div class="empty-icon">📅</div><h4>No hay eventos</h4><p>Creá tu primer evento para comenzar.</p></div>`}
+    <div id="account-management"></div>
   `;
 
   document.getElementById('event-selector')?.addEventListener('change', () => { renderAdminDashboard(container); });
   setTimeout(() => { document.querySelectorAll('[data-counter]').forEach(el => { animateCounter(el, parseInt(el.dataset.counter)); }); }, 100);
+  loadAccountManagement();
+}
+
+async function loadAccountManagement() {
+  const container = document.getElementById('account-management');
+  if (!container) return;
+  try {
+    const [promoters, gateAccounts] = await Promise.all([listPromoters(), listGateAccounts()]);
+    container.innerHTML = `<div class="admin-account-grid"><section class="card account-management-card"><div class="card-header"><div><h3>🎤 Promotores</h3><p class="text-sm text-secondary">Eliminá perfiles que ya no deben acceder.</p></div><span class="badge badge-primary">${promoters.length}</span></div><div class="card-body">${promoters.length ? promoters.map(accountRow).join('') : '<div class="empty-state"><p>No hay promotores reales registrados.</p></div>'}</div></section><section class="card account-management-card"><div class="card-header"><div><h3>🚪 Personal Puerta</h3><p class="text-sm text-secondary">Habilitá o bloqueá el control de ingreso.</p></div><span class="badge badge-primary">${gateAccounts.length}</span></div><div class="card-body">${gateAccounts.length ? gateAccounts.map(gateRow).join('') : '<div class="empty-state"><p>No hay solicitudes de Puerta.</p></div>'}</div></section></div>`;
+    container.querySelectorAll('[data-admin-account-action="delete-promoter"]').forEach(button => button.addEventListener('click', () => removePromoter(button.dataset.uid)));
+    container.querySelectorAll('[data-gate-action]').forEach(button => button.addEventListener('click', () => reviewGate(button.dataset.uid, button.dataset.gateAction)));
+  } catch (error) {
+    container.innerHTML = `<div class="card"><div class="card-body"><p class="text-secondary">No se pudieron cargar las cuentas: ${escapeHtml(authErrorMessage(error))}</p></div></div>`;
+  }
+}
+
+function accountRow(account) {
+  const status = account.status || (account.active === false ? 'suspended' : 'approved');
+  return `<div class="account-row"><div><strong>${escapeHtml(account.displayName || 'Sin nombre')}</strong><span>${escapeHtml(account.email || '')}</span></div><span class="badge ${status === 'approved' ? 'badge-success' : status === 'pending' ? 'badge-warning' : 'badge-danger'}">${status}</span><button class="icon-btn icon-btn-danger" type="button" title="Eliminar perfil y bloquear acceso" data-admin-account-action="delete-promoter" data-uid="${escapeHtml(account.uid || account.id)}">🗑️</button></div>`;
+}
+
+function gateRow(account) {
+  const status = account.status || (account.active === false ? 'suspended' : 'approved');
+  const uid = escapeHtml(account.uid || account.id);
+  const action = status === 'approved' ? 'suspended' : 'approved';
+  const label = status === 'approved' ? 'Deshabilitar' : 'Habilitar';
+  return `<div class="account-row"><div><strong>${escapeHtml(account.displayName || 'Sin nombre')}</strong><span>${escapeHtml(account.email || '')}</span></div><span class="badge ${status === 'approved' ? 'badge-success' : status === 'pending' ? 'badge-warning' : 'badge-danger'}">${status}</span><button class="btn ${status === 'approved' ? 'btn-danger' : 'btn-success'} btn-sm" type="button" data-gate-action="${action}" data-uid="${uid}">${status === 'pending' ? 'Habilitar' : label}</button></div>`;
+}
+
+async function removePromoter(uid) {
+  if (!window.confirm('¿Eliminar este perfil de promotor y bloquear su acceso? Sus listas e historial se conservarán.')) return;
+  try {
+    await deletePromoterProfile(uid);
+    store.removeUser(uid);
+    showToast('Perfil de promotor eliminado y acceso bloqueado', 'success');
+    loadAccountManagement();
+  } catch (error) { showToast(authErrorMessage(error), 'error'); }
+}
+
+async function reviewGate(uid, status) {
+  const action = status === 'approved' ? 'habilitar' : 'deshabilitar';
+  if (!window.confirm(`¿Querés ${action} esta cuenta Puerta?`)) return;
+  try {
+    await updateGateAccess(uid, status);
+    showToast(status === 'approved' ? 'Cuenta Puerta habilitada' : 'Cuenta Puerta deshabilitada', 'success');
+    loadAccountManagement();
+  } catch (error) { showToast(authErrorMessage(error), 'error'); }
+}
+
+function escapeHtml(value = '') {
+  return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 }
 
 function renderEventDashboard(event, metrics) {
